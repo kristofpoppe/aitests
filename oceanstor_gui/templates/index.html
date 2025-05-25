@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huawei OceanStor S3 Management</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1 { color: #0056b3; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"] { width: calc(100% - 22px); padding: 10px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 4px; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #bucket_info { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; background-color: #e9ecef; }
+        .error { color: red; font-weight: bold; }
+        .success { color: green; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background-color: #f8f9fa; padding: 10px; border-radius: 4px; border: 1px solid #ccc;}
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        nav a:hover { text-decoration: underline; }
+        .policy-assignment-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ccc; }
+        .policy-assignment-section label { margin-right: 10px; }
+        .policy-assignment-section select { padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-right: 10px; }
+        .applied-policy-info { margin-top:10px; padding:10px; background-color: #f0f0f0; border-radius:4px; border: 1px solid #e0e0e0; }
+    </style>
+</head>
+<body>
+    <div class="container" style="margin-bottom: 20px;">
+        <nav>
+            <a href="/">Bucket Management</a>
+            <a href="/iam">IAM Policy Management</a>
+        </nav>
+    </div>
+    <div class="container">
+        <h1>Huawei OceanStor S3 Management</h1>
+        <form id="createBucketForm">
+            <div>
+                <label for="bucket_name">Bucket Name:</label>
+                <input type="text" id="bucket_name" name="bucket_name" required>
+            </div>
+            <button type="submit">Create Bucket</button>
+        </form>
+        <div id="bucket_info">
+            <p>Bucket creation results will appear here.</p>
+        </div>
+    </div>
+
+    <script>
+        let availablePolicies = {}; // Store fetched IAM policies globally
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        async function fetchIamPolicies() {
+            try {
+                const response = await fetch('/api/iam/policies');
+                if (!response.ok) {
+                    console.error('Failed to fetch IAM policies:', response.status);
+                    availablePolicies = {}; // Reset or handle error appropriately
+                    return;
+                }
+                availablePolicies = await response.json();
+            } catch (error) {
+                console.error('Error fetching IAM policies:', error);
+                availablePolicies = {};
+            }
+        }
+
+        async function displayAppliedPolicy(bucketName) {
+            const appliedPolicyDiv = document.getElementById(`applied_policy_info_${bucketName}`);
+            if (!appliedPolicyDiv) return;
+
+            try {
+                const response = await fetch(`/api/buckets/${bucketName}/policy`);
+                const result = await response.json();
+                
+                if (response.ok && result.policy_name) {
+                    appliedPolicyDiv.innerHTML = `<p class="success">Currently Applied Policy: <strong>${escapeHtml(result.policy_name)}</strong></p>`;
+                    appliedPolicyDiv.innerHTML += `<pre>${escapeHtml(JSON.stringify(result.policy_document, null, 2))}</pre>`;
+                } else if (response.status === 404 && result.message === "No policy assigned to this bucket") {
+                     appliedPolicyDiv.innerHTML = `<p>No policy currently applied to this bucket.</p>`;
+                } 
+                else {
+                     appliedPolicyDiv.innerHTML = `<p class="error">Could not retrieve policy: ${escapeHtml(result.error || 'Unknown error')}</p>`;
+                }
+            } catch (error) {
+                appliedPolicyDiv.innerHTML = `<p class="error">Error fetching applied policy: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
+        async function handleApplyPolicy(bucketName, policySelectId) {
+            const policySelect = document.getElementById(policySelectId);
+            const selectedPolicyName = policySelect.value;
+            const appliedPolicyDiv = document.getElementById(`applied_policy_info_${bucketName}`);
+
+            if (!selectedPolicyName) {
+                alert("Please select a policy to apply.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/buckets/${bucketName}/policy`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ policy_name: selectedPolicyName }),
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message || `Policy '${escapeHtml(selectedPolicyName)}' applied successfully.`);
+                    displayAppliedPolicy(bucketName); // Refresh displayed policy
+                } else {
+                    alert(`Error applying policy: ${escapeHtml(result.error || 'Failed to apply policy.')} ${escapeHtml(result.details || '')}`);
+                }
+            } catch (error) {
+                alert(`An unexpected error occurred while applying policy: ${escapeHtml(error.message)}`);
+            }
+        }
+
+        document.getElementById('createBucketForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const bucketNameInput = document.getElementById('bucket_name');
+            const bucketName = bucketNameInput.value.trim();
+            const bucketInfoDiv = document.getElementById('bucket_info');
+            bucketInfoDiv.innerHTML = ''; // Clear previous results
+
+            if (!bucketName) {
+                bucketInfoDiv.innerHTML = '<p class="error">Bucket name cannot be empty.</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/buckets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bucket_name: bucketName }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    let infoHtml = '<p class="success">Bucket processed successfully!</p>';
+                    infoHtml += '<pre>';
+                    infoHtml += `Bucket Name: ${escapeHtml(result.bucket_name)}\n`;
+                    if (result.access_key) {
+                        infoHtml += `Access Key: ${escapeHtml(result.access_key)}\n`;
+                        infoHtml += `Secret Key: ${escapeHtml(result.secret_key)}\n`;
+                    }
+                    if (result.message) {
+                         infoHtml += `Message: ${escapeHtml(result.message)}\n`;
+                    }
+                    infoHtml += '</pre>';
+                    
+                    // Add policy assignment section
+                    const policySelectId = `policy_select_${escapeHtml(result.bucket_name)}`;
+                    infoHtml += `<div class="policy-assignment-section">`;
+                    infoHtml += `<h4>Assign Policy to ${escapeHtml(result.bucket_name)}</h4>`;
+                    infoHtml += `<label for="${policySelectId}">Select Policy:</label>`;
+                    infoHtml += `<select id="${policySelectId}">`;
+                    infoHtml += `<option value="">-- Select a policy --</option>`;
+                    for (const policyName in availablePolicies) {
+                        infoHtml += `<option value="${escapeHtml(policyName)}">${escapeHtml(policyName)}</option>`;
+                    }
+                    infoHtml += `</select>`;
+                    infoHtml += `<button onclick="handleApplyPolicy('${escapeHtml(result.bucket_name)}', '${policySelectId}')">Apply Policy</button>`;
+                    infoHtml += `<div id="applied_policy_info_${escapeHtml(result.bucket_name)}" class="applied-policy-info"><p>Loading applied policy...</p></div>`;
+                    infoHtml += `</div>`;
+                    
+                    bucketInfoDiv.innerHTML = infoHtml;
+                    displayAppliedPolicy(result.bucket_name); // Fetch and display current policy
+                    bucketNameInput.value = ''; // Clear input after successful creation
+                } else {
+                    let errorMsg = `Error: ${result.error || 'Failed to create bucket.'}`;
+                    if (result.details) {
+                        errorMsg += ` Details: ${escapeHtml(result.details)}`;
+                    }
+                    bucketInfoDiv.innerHTML = `<p class="error">${errorMsg}</p><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>`;
+                }
+            } catch (error) {
+                bucketInfoDiv.innerHTML = `<p class="error">An unexpected error occurred: ${escapeHtml(error.message)}</p>`;
+            }
+        });
+
+        // Fetch IAM policies when the page loads
+        document.addEventListener('DOMContentLoaded', fetchIamPolicies);
+    </script>
+</body>
+</html>

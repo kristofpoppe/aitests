@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IAM Policy Management - Huawei OceanStor S3</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1, h2 { color: #0056b3; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        input[type="text"], textarea { width: calc(100% - 22px); padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        textarea { min-height: 100px; font-family: monospace; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        #policy_list { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 4px; background-color: #e9ecef; }
+        #policy_list h2 { margin-top: 0; }
+        .policy-item { margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border: 1px solid #ced4da; border-radius: 4px; }
+        .policy-item h3 { margin-top: 0; margin-bottom: 5px; color: #0056b3; }
+        #policy_message { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; }
+        .success { color: #155724; background-color: #d4edda; border: 1px solid #c3e6cb; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background-color: #e9ecef; padding: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
+        nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="/">Bucket Management</a>
+            <a href="/iam">IAM Policy Management</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <h1>IAM Policy Management</h1>
+        
+        <div id="policy_message"></div>
+
+        <h2>Create New IAM Policy</h2>
+        <form id="createPolicyForm">
+            <div>
+                <label for="policy_name">Policy Name:</label>
+                <input type="text" id="policy_name" name="policy_name" required>
+            </div>
+            <div>
+                <label for="policy_document">Policy Document (JSON):</label>
+                <textarea id="policy_document" name="policy_document" required></textarea>
+            </div>
+            <button type="submit">Create Policy</button>
+        </form>
+    </div>
+
+    <div class="container" id="policy_list_container">
+        <h2>Existing IAM Policies</h2>
+        <div id="policy_list">
+            <p>Loading policies...</p>
+        </div>
+    </div>
+
+    <script>
+        const policyListDiv = document.getElementById('policy_list');
+        const policyMessageDiv = document.getElementById('policy_message');
+        const createPolicyForm = document.getElementById('createPolicyForm');
+
+        async function fetchAndDisplayPolicies() {
+            policyListDiv.innerHTML = '<p>Loading policies...</p>';
+            try {
+                const response = await fetch('/api/iam/policies');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const policies = await response.json();
+                
+                if (Object.keys(policies).length === 0) {
+                    policyListDiv.innerHTML = '<p>No IAM policies found.</p>';
+                    return;
+                }
+
+                let listHtml = '';
+                for (const policyName in policies) {
+                    listHtml += `<div class="policy-item">`;
+                    listHtml += `<h3>${escapeHtml(policyName)}</h3>`;
+                    listHtml += `<pre>${escapeHtml(JSON.stringify(policies[policyName], null, 2))}</pre>`;
+                    listHtml += `</div>`;
+                }
+                policyListDiv.innerHTML = listHtml;
+            } catch (error) {
+                policyListDiv.innerHTML = `<p class="error">Error loading policies: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
+        createPolicyForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            policyMessageDiv.innerHTML = ''; // Clear previous messages
+            policyMessageDiv.className = '';
+
+
+            const policyName = document.getElementById('policy_name').value.trim();
+            const policyDocumentString = document.getElementById('policy_document').value.trim();
+
+            if (!policyName || !policyDocumentString) {
+                displayMessage('Policy name and document cannot be empty.', 'error');
+                return;
+            }
+
+            let policyDocument;
+            try {
+                policyDocument = JSON.parse(policyDocumentString);
+            } catch (e) {
+                displayMessage('Invalid JSON in policy document: ' + e.message, 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/iam/policies', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        policy_name: policyName, 
+                        policy_document: policyDocument 
+                    }),
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    displayMessage(`Policy '${escapeHtml(policyName)}' processed: ${escapeHtml(result.message || 'Success!')}`, 'success');
+                    document.getElementById('policy_name').value = ''; // Clear form
+                    document.getElementById('policy_document').value = '';
+                    fetchAndDisplayPolicies(); // Refresh the list
+                } else {
+                    displayMessage(`Error: ${escapeHtml(result.error || 'Failed to create policy.')} (Status: ${response.status})` + 
+                                   (result.details ? ` Details: ${escapeHtml(result.details)}` : ''), 'error');
+                }
+            } catch (error) {
+                displayMessage(`An unexpected error occurred: ${escapeHtml(error.message)}`, 'error');
+            }
+        });
+
+        function displayMessage(message, type) {
+            policyMessageDiv.innerHTML = `<p>${message}</p>`;
+            policyMessageDiv.className = type; // 'success' or 'error'
+        }
+        
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+
+        // Initial load of policies
+        document.addEventListener('DOMContentLoaded', fetchAndDisplayPolicies);
+    </script>
+</body>
+</html>
