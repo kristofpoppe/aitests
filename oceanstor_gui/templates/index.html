@@ -153,15 +153,12 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    let infoHtml = '<p class="success">Bucket processed successfully!</p>';
+                    let infoHtml = '<p class="success">Bucket creation process initiated.</p>'; // General success message
                     infoHtml += '<pre>';
                     infoHtml += `Bucket Name: ${escapeHtml(result.bucket_name)}\n`;
-                    if (result.access_key) {
-                        infoHtml += `Access Key: ${escapeHtml(result.access_key)}\n`;
-                        infoHtml += `Secret Key: ${escapeHtml(result.secret_key)}\n`;
-                    }
+                    // The result.message from the backend now contains the important guidance.
                     if (result.message) {
-                         infoHtml += `Message: ${escapeHtml(result.message)}\n`;
+                         infoHtml += `\nStatus: ${escapeHtml(result.message)}\n`; // Ensure this message is prominent
                     }
                     infoHtml += '</pre>';
                     

@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request, render_template
 import boto3
-import uuid
+# import uuid # No longer needed for mock credential generation
 import json
 from botocore.exceptions import ClientError # Added for specific error handling
 from datetime import datetime # Added for date formatting
@@ -108,22 +108,16 @@ def create_bucket():
         s3_client.create_bucket(Bucket=bucket_name)
         app.logger.info(f"Successfully created bucket '{bucket_name}' on S3.")
 
-        # Generate unique credentials for this bucket (mocking part remains for now)
-        # For simplicity, we're using UUIDs. In a real system, you'd integrate
-        # with an IAM or user management system.
-        generated_access_key = uuid.uuid4().hex
-        generated_secret_key = uuid.uuid4().hex
-
+        # Store a marker that this bucket is known to the application
+        # No mock credentials are generated or stored.
         bucket_credentials_store[bucket_name] = {
-            "access_key": generated_access_key,
-            "secret_key": generated_secret_key
+            "info": "Bucket created and tracked by application"
+            # "creation_simulated_at": datetime.utcnow().isoformat() # Alternative example
         }
 
         return jsonify({
             "bucket_name": bucket_name,
-            "access_key": generated_access_key, # This is mock
-            "secret_key": generated_secret_key, # This is mock
-            "message": f"Bucket '{bucket_name}' created successfully on S3. Mock credentials generated."
+            "message": f"Bucket '{bucket_name}' created successfully on S3. Please manage access and create credentials through your OceanStor IAM interface."
         }), 201
 
     except ClientError as e:
@@ -142,9 +136,14 @@ def create_bucket():
 @app.route('/api/buckets/<string:bucket_name>/credentials', methods=['GET'])
 def get_bucket_credentials(bucket_name):
     if bucket_name in bucket_credentials_store:
-        return jsonify(bucket_credentials_store[bucket_name]), 200
+        # Return a message indicating credentials should be managed via OceanStor IAM
+        return jsonify({
+            "message": "This application does not store S3 credentials. Please manage access keys for this bucket via your OceanStor IAM interface.",
+            "bucket_status": bucket_credentials_store[bucket_name]
+        }), 200
     else:
-        return jsonify({"error": "Credentials not found for this bucket or bucket does not exist."}), 404
+        # If bucket is not in the store, it means it wasn't created via this app or has been removed
+        return jsonify({"error": "Bucket not found or not tracked by this application."}), 404
 
 @app.route('/api/buckets/<string:bucket_name>/policy', methods=['PUT'])
 def assign_bucket_policy(bucket_name):
