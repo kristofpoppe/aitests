@@ -45,6 +45,15 @@
         </div>
     </div>
 
+    <div class="container" id="s3_bucket_list_container" style="margin-top: 20px;">
+        <h2>Available S3 Buckets</h2>
+        <button id="refresh_s3_buckets_button">Refresh List</button>
+        <div id="s3_bucket_list_message" style="margin-top: 10px; margin-bottom: 10px;"></div>
+        <div id="s3_bucket_list">
+            <!-- Buckets will be listed here by JavaScript -->
+        </div>
+    </div>
+
     <script>
         let availablePolicies = {}; // Store fetched IAM policies globally
 
@@ -174,20 +183,100 @@
                     bucketInfoDiv.innerHTML = infoHtml;
                     displayAppliedPolicy(result.bucket_name); // Fetch and display current policy
                     bucketNameInput.value = ''; // Clear input after successful creation
+                    fetchAndDisplayS3Buckets(); // Refresh S3 bucket list
                 } else {
                     let errorMsg = `Error: ${result.error || 'Failed to create bucket.'}`;
                     if (result.details) {
                         errorMsg += ` Details: ${escapeHtml(result.details)}`;
                     }
-                    bucketInfoDiv.innerHTML = `<p class="error">${errorMsg}</p><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>`;
+                    // Display error message, ensuring it indicates the context (creating a bucket)
+                    bucketInfoDiv.innerHTML = `<p class="error">Failed to create bucket '${escapeHtml(bucketName)}': ${errorMsg}</p><pre>${escapeHtml(JSON.stringify(result, null, 2))}</pre>`;
                 }
             } catch (error) {
-                bucketInfoDiv.innerHTML = `<p class="error">An unexpected error occurred: ${escapeHtml(error.message)}</p>`;
+                bucketInfoDiv.innerHTML = `<p class="error">An unexpected error occurred while creating bucket '${escapeHtml(bucketName)}': ${escapeHtml(error.message)}</p>`;
             }
         });
 
-        // Fetch IAM policies when the page loads
-        document.addEventListener('DOMContentLoaded', fetchIamPolicies);
+        async function fetchAndDisplayS3Buckets() {
+            const listDiv = document.getElementById('s3_bucket_list');
+            const messageDiv = document.getElementById('s3_bucket_list_message');
+            listDiv.innerHTML = ''; // Clear previous list
+            messageDiv.innerHTML = '<p>Loading S3 buckets...</p>';
+
+            try {
+                const response = await fetch('/api/s3buckets');
+                const buckets = await response.json();
+
+                if (!response.ok) {
+                    messageDiv.innerHTML = `<p class="error">Error loading S3 buckets: ${escapeHtml(buckets.error || response.statusText)}. Details: ${escapeHtml(buckets.details || 'N/A')}</p>`;
+                    return;
+                }
+
+                if (buckets.length === 0) {
+                    messageDiv.innerHTML = '<p>No S3 buckets found.</p>';
+                    return;
+                }
+
+                messageDiv.innerHTML = ''; // Clear loading message
+                buckets.forEach(bucket => {
+                    const bucketItem = document.createElement('div');
+                    bucketItem.className = 'bucket-item';
+                    bucketItem.style.padding = '10px';
+                    bucketItem.style.borderBottom = '1px solid #eee';
+
+                    const creationDate = bucket.creation_date ? new Date(bucket.creation_date).toLocaleString() : 'N/A';
+
+                    bucketItem.innerHTML = `
+                        <span><strong>${escapeHtml(bucket.name)}</strong> (Created: ${escapeHtml(creationDate)})</span>
+                        <button class="delete-s3-bucket-button" data-bucket-name="${escapeHtml(bucket.name)}" style="margin-left: 10px; background-color: #dc3545;">Delete</button>
+                    `;
+                    listDiv.appendChild(bucketItem);
+                });
+
+                // Add event listeners to new delete buttons
+                document.querySelectorAll('.delete-s3-bucket-button').forEach(button => {
+                    button.addEventListener('click', function() {
+                        handleDeleteS3Bucket(this.dataset.bucketName);
+                    });
+                });
+
+            } catch (error) {
+                messageDiv.innerHTML = `<p class="error">Failed to fetch S3 buckets: ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
+        async function handleDeleteS3Bucket(bucketName) {
+            if (!confirm(`Are you sure you want to delete bucket '${escapeHtml(bucketName)}'? This action cannot be undone.`)) {
+                return;
+            }
+
+            const messageDiv = document.getElementById('s3_bucket_list_message');
+            messageDiv.innerHTML = `<p>Deleting bucket '${escapeHtml(bucketName)}'...</p>`;
+
+            try {
+                const response = await fetch(`/api/s3buckets/${bucketName}`, {
+                    method: 'DELETE',
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    messageDiv.innerHTML = `<p class="success">${escapeHtml(result.message || `Bucket '${bucketName}' deleted successfully.`)}</p>`;
+                    fetchAndDisplayS3Buckets(); // Refresh the list
+                } else {
+                    messageDiv.innerHTML = `<p class="error">Error deleting bucket '${escapeHtml(bucketName)}': ${escapeHtml(result.error || 'Unknown error')}. Details: ${escapeHtml(result.details || '')}</p>`;
+                }
+            } catch (error) {
+                messageDiv.innerHTML = `<p class="error">An unexpected error occurred while deleting bucket '${escapeHtml(bucketName)}': ${escapeHtml(error.message)}</p>`;
+            }
+        }
+
+        document.getElementById('refresh_s3_buckets_button').addEventListener('click', fetchAndDisplayS3Buckets);
+
+        // Fetch IAM policies and S3 buckets when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchIamPolicies();
+            fetchAndDisplayS3Buckets();
+        });
     </script>
 </body>
 </html>

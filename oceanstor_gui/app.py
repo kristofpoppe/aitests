@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request, render_template
 import boto3
 import uuid
 import json
+from botocore.exceptions import ClientError # Added for specific error handling
+from datetime import datetime # Added for date formatting
 
 # TODO: Configure these placeholder variables with your OceanStor S3 details
 OCEANSTOR_ENDPOINT_URL = "YOUR_OCEANSTOR_S3_ENDPOINT_URL"  # e.g., "http://192.168.1.100:8080"
@@ -21,6 +23,7 @@ iam_policies_store = {}
 # In-memory store for bucket policy assignments
 bucket_policy_assignments = {}
 
+
 def get_s3_client():
     """Initializes and returns a boto3 S3 client."""
     return boto3.client(
@@ -38,6 +41,55 @@ def get_s3_client():
 def health_check():
     return jsonify({"status": "ok"}), 200
 
+# --- S3 Bucket Specific Operations ---
+
+@app.route('/api/s3buckets', methods=['GET'])
+def list_s3_buckets():
+    """Lists all buckets in the S3 service."""
+    try:
+        s3_client = get_s3_client()
+        response = s3_client.list_buckets()
+        buckets = []
+        for bucket in response.get('Buckets', []):
+            buckets.append({
+                "name": bucket['Name'],
+                # CreationDate is a datetime object, convert to string
+                "creation_date": bucket['CreationDate'].isoformat() if 'CreationDate' in bucket else None
+            })
+        return jsonify(buckets), 200
+    except ClientError as e:
+        # Log the error and return a generic message
+        app.logger.error(f"Error listing S3 buckets: {e}")
+        return jsonify({"error": "Failed to list S3 buckets", "details": str(e.response.get('Error', {}).get('Message', 'Unknown error'))}), 500
+    except Exception as e:
+        app.logger.error(f"Unexpected error listing S3 buckets: {e}")
+        return jsonify({"error": "An unexpected error occurred while listing S3 buckets", "details": str(e)}), 500
+
+@app.route('/api/s3buckets/<string:bucket_name>', methods=['DELETE'])
+def delete_s3_bucket(bucket_name):
+    """Deletes a bucket from the S3 service and local stores."""
+    try:
+        s3_client = get_s3_client()
+        s3_client.delete_bucket(Bucket=bucket_name)
+
+        # If successful, remove from in-memory stores
+        if bucket_name in bucket_credentials_store:
+            del bucket_credentials_store[bucket_name]
+        if bucket_name in bucket_policy_assignments:
+            del bucket_policy_assignments[bucket_name]
+
+        return jsonify({"message": f"Bucket '{bucket_name}' deleted successfully from S3 and local cache."}), 200
+    except ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code')
+        if error_code == 'NoSuchBucket':
+            return jsonify({"error": f"Bucket '{bucket_name}' not found on S3.", "details": str(e)}), 404
+        app.logger.error(f"ClientError deleting S3 bucket {bucket_name}: {e}")
+        return jsonify({"error": f"Failed to delete bucket '{bucket_name}' from S3.", "details": str(e.response.get('Error', {}).get('Message', 'Unknown client error'))}), 500
+    except Exception as e:
+        app.logger.error(f"Unexpected error deleting S3 bucket {bucket_name}: {e}")
+        return jsonify({"error": "An unexpected error occurred while deleting the bucket.", "details": str(e)}), 500
+
+
 @app.route('/api/buckets', methods=['POST'])
 def create_bucket():
     data = request.get_json()
@@ -52,13 +104,11 @@ def create_bucket():
 
     try:
         s3_client = get_s3_client()
-        # Attempt to create the bucket
-        # Note: Actual bucket creation on some S3-compatible storages might require
-        # specific configurations or might be restricted.
-        # For Huawei OceanStor, ensure the underlying storage pool and policies are set up.
+        # Actually attempt to create the bucket on the S3 storage
         s3_client.create_bucket(Bucket=bucket_name)
+        app.logger.info(f"Successfully created bucket '{bucket_name}' on S3.")
 
-        # Generate unique credentials for this bucket
+        # Generate unique credentials for this bucket (mocking part remains for now)
         # For simplicity, we're using UUIDs. In a real system, you'd integrate
         # with an IAM or user management system.
         generated_access_key = uuid.uuid4().hex
@@ -71,19 +121,23 @@ def create_bucket():
 
         return jsonify({
             "bucket_name": bucket_name,
-            "access_key": generated_access_key,
-            "secret_key": generated_secret_key,
-            "message": "Bucket created successfully (simulated) and credentials generated."
+            "access_key": generated_access_key, # This is mock
+            "secret_key": generated_secret_key, # This is mock
+            "message": f"Bucket '{bucket_name}' created successfully on S3. Mock credentials generated."
         }), 201
 
+    except ClientError as e:
+        app.logger.error(f"ClientError creating bucket {bucket_name}: {e}")
+        error_code = e.response.get('Error', {}).get('Code')
+        if error_code == 'BucketAlreadyOwnedByYou' or error_code == 'BucketAlreadyExists':
+            return jsonify({"error": f"Bucket '{bucket_name}' already exists on S3.", "details": str(e.response.get('Error', {}).get('Message', ''))}), 409
+        return jsonify({"error": f"Failed to create bucket '{bucket_name}' on S3.", "details": str(e.response.get('Error', {}).get('Message', 'Unknown client error'))}), 500
     except Exception as e:
-        # Basic error handling. In a real app, log more details.
-        # Common boto3 errors: ClientError, NoCredentialsError, EndpointConnectionError
-        # Specific error for bucket already exists: ClientError with error code 'BucketAlreadyOwnedByYou' or similar
-        error_message = str(e)
-        if "BucketAlreadyOwnedByYou" in error_message or "BucketAlreadyExists" in error_message :
-             return jsonify({"error": f"Bucket '{bucket_name}' already exists.", "details": error_message}), 409 # Conflict
-        return jsonify({"error": f"Failed to create bucket '{bucket_name}'.", "details": error_message}), 500
+        app.logger.error(f"Unexpected error creating bucket {bucket_name}: {e}")
+        return jsonify({"error": f"An unexpected error occurred while creating bucket '{bucket_name}'.", "details": str(e)}), 500
+
+# --- End S3 Bucket Specific Operations ---
+
 
 @app.route('/api/buckets/<string:bucket_name>/credentials', methods=['GET'])
 def get_bucket_credentials(bucket_name):
@@ -111,18 +165,21 @@ def assign_bucket_policy(bucket_name):
     try:
         s3_client = get_s3_client()
         s3_client.put_bucket_policy(Bucket=bucket_name, Policy=json.dumps(policy_document))
-        
         bucket_policy_assignments[bucket_name] = policy_name
-        
         return jsonify({
             "message": f"Policy '{policy_name}' applied to bucket '{bucket_name}' successfully"
         }), 200
-    except Exception as e:
-        # In a real app, inspect 'e' for specific boto3 errors (e.g., ClientError)
-        error_message = str(e)
+    except ClientError as e:
+        app.logger.error(f"ClientError applying policy to bucket {bucket_name}: {e}")
         return jsonify({
             "error": f"Failed to apply policy '{policy_name}' to bucket '{bucket_name}'.",
-            "details": error_message
+            "details": str(e.response.get('Error', {}).get('Message', 'Unknown client error'))
+        }), 500
+    except Exception as e:
+        app.logger.error(f"Unexpected error applying policy to bucket {bucket_name}: {e}")
+        return jsonify({
+            "error": "An unexpected error occurred while applying the bucket policy.",
+            "details": str(e)
         }), 500
 
 @app.route('/api/buckets/<string:bucket_name>/policy', methods=['GET'])
@@ -175,6 +232,24 @@ def get_iam_policy(policy_name):
         return jsonify(policy), 200
     else:
         return jsonify({"error": f"Policy '{policy_name}' not found"}), 404
+
+@app.route('/api/iam/policies/<string:policy_name>', methods=['PUT'])
+def update_iam_policy(policy_name):
+    """Updates an existing IAM policy in the in-memory store."""
+    if policy_name not in iam_policies_store:
+        return jsonify({"error": f"Policy '{policy_name}' not found"}), 404
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Request body must be JSON"}), 400
+
+    new_policy_document = data.get('policy_document')
+    if not new_policy_document or not isinstance(new_policy_document, dict):
+        return jsonify({"error": "policy_document is required in the request body and must be a JSON object"}), 400
+
+    iam_policies_store[policy_name] = new_policy_document
+    app.logger.info(f"Policy '{policy_name}' updated successfully.")
+    return jsonify({"message": f"Policy '{policy_name}' updated successfully"}), 200
 
 # --- Frontend Routes ---
 @app.route('/')

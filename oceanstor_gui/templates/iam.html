@@ -63,6 +63,46 @@
         const policyListDiv = document.getElementById('policy_list');
         const policyMessageDiv = document.getElementById('policy_message');
         const createPolicyForm = document.getElementById('createPolicyForm');
+        const policyNameInput = document.getElementById('policy_name');
+        const policyDocumentTextarea = document.getElementById('policy_document');
+        const submitButton = createPolicyForm.querySelector('button[type="submit"]');
+        let currentEditPolicyName = null; // To track if we are in edit mode
+
+        function resetPolicyForm() {
+            createPolicyForm.reset();
+            policyNameInput.readOnly = false;
+            submitButton.textContent = 'Create Policy';
+            currentEditPolicyName = null;
+            // Remove cancel button if it exists
+            const cancelButton = document.getElementById('cancelEditButton');
+            if (cancelButton) {
+                cancelButton.remove();
+            }
+            // Scroll to form
+            // createPolicyForm.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function handleEditPolicy(policyName, policyDocument) {
+            currentEditPolicyName = policyName;
+            policyNameInput.value = policyName;
+            policyNameInput.readOnly = true;
+            policyDocumentTextarea.value = JSON.stringify(policyDocument, null, 2);
+            submitButton.textContent = 'Update Policy';
+
+            // Add a cancel button if it doesn't exist
+            if (!document.getElementById('cancelEditButton')) {
+                const cancelButton = document.createElement('button');
+                cancelButton.textContent = 'Cancel Edit';
+                cancelButton.type = 'button'; // Important to prevent form submission
+                cancelButton.id = 'cancelEditButton';
+                cancelButton.style.marginLeft = '10px';
+                cancelButton.style.backgroundColor = '#6c757d'; // A different color for cancel
+                cancelButton.addEventListener('click', resetPolicyForm);
+                submitButton.parentNode.insertBefore(cancelButton, submitButton.nextSibling);
+            }
+            // Scroll to form for editing
+             createPolicyForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
         async function fetchAndDisplayPolicies() {
             policyListDiv.innerHTML = '<p>Loading policies...</p>';
@@ -83,9 +123,21 @@
                     listHtml += `<div class="policy-item">`;
                     listHtml += `<h3>${escapeHtml(policyName)}</h3>`;
                     listHtml += `<pre>${escapeHtml(JSON.stringify(policies[policyName], null, 2))}</pre>`;
+                    // Add Edit button
+                    listHtml += `<button class="edit-policy-button" data-policy-name="${escapeHtml(policyName)}">Edit</button>`;
                     listHtml += `</div>`;
                 }
                 policyListDiv.innerHTML = listHtml;
+
+                // Attach event listeners to new edit buttons
+                document.querySelectorAll('.edit-policy-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const policyName = button.dataset.policyName;
+                        // The policies object is in scope from the fetchAndDisplayPolicies function
+                        handleEditPolicy(policyName, policies[policyName]);
+                    });
+                });
+
             } catch (error) {
                 policyListDiv.innerHTML = `<p class="error">Error loading policies: ${escapeHtml(error.message)}</p>`;
             }
@@ -96,9 +148,8 @@
             policyMessageDiv.innerHTML = ''; // Clear previous messages
             policyMessageDiv.className = '';
 
-
-            const policyName = document.getElementById('policy_name').value.trim();
-            const policyDocumentString = document.getElementById('policy_document').value.trim();
+            const policyName = policyNameInput.value.trim(); // Use the global input ref
+            const policyDocumentString = policyDocumentTextarea.value.trim(); // Use the global textarea ref
 
             if (!policyName || !policyDocumentString) {
                 displayMessage('Policy name and document cannot be empty.', 'error');
@@ -114,26 +165,42 @@
             }
 
             try {
-                const response = await fetch('/api/iam/policies', {
-                    method: 'POST',
+                let response;
+                let url = '/api/iam/policies';
+                let method = 'POST';
+                let body = { policy_name: policyName, policy_document: policyDocument };
+
+                if (currentEditPolicyName) {
+                    // Edit mode
+                    if (policyName !== currentEditPolicyName) {
+                        // This case should ideally be prevented by readOnly input, but good to double check.
+                        displayMessage('Policy name cannot be changed during an update. Please cancel edit to create a new policy.', 'error');
+                        return;
+                    }
+                    url = `/api/iam/policies/${encodeURIComponent(currentEditPolicyName)}`;
+                    method = 'PUT';
+                    // For PUT, only policy_document is needed in the body as per backend implementation
+                    body = { policy_document: policyDocument }; 
+                }
+
+                response = await fetch(url, {
+                    method: method,
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ 
-                        policy_name: policyName, 
-                        policy_document: policyDocument 
-                    }),
+                    body: JSON.stringify(body),
                 });
 
                 const result = await response.json();
 
                 if (response.ok) {
-                    displayMessage(`Policy '${escapeHtml(policyName)}' processed: ${escapeHtml(result.message || 'Success!')}`, 'success');
-                    document.getElementById('policy_name').value = ''; // Clear form
-                    document.getElementById('policy_document').value = '';
+                    const action = currentEditPolicyName ? 'updated' : 'created';
+                    displayMessage(`Policy '${escapeHtml(policyName)}' ${action} successfully: ${escapeHtml(result.message || 'Success!')}`, 'success');
+                    resetPolicyForm(); // Reset form to initial state
                     fetchAndDisplayPolicies(); // Refresh the list
                 } else {
-                    displayMessage(`Error: ${escapeHtml(result.error || 'Failed to create policy.')} (Status: ${response.status})` + 
+                    const action = currentEditPolicyName ? 'update' : 'create';
+                    displayMessage(`Error during policy ${action}: ${escapeHtml(result.error || `Failed to ${action} policy.`)} (Status: ${response.status})` +
                                    (result.details ? ` Details: ${escapeHtml(result.details)}` : ''), 'error');
                 }
             } catch (error) {
