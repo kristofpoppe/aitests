@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Evenementen in en rond Blankenberge – RSS Feed</title>
+  <link rel="alternate" type="application/rss+xml" title="Evenementen Blankenberge RSS" href="feed.xml"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f7ff;color:#1a2c3a;line-height:1.6}
+    header{background:linear-gradient(135deg,#006699,#0099cc);color:#fff;padding:2.5rem 1.5rem;text-align:center}
+    header h1{font-size:2rem;margin-bottom:.4rem}
+    header p{opacity:.9;font-size:1.05rem}
+    .badge{display:inline-block;background:#fff;color:#006699;font-weight:bold;padding:.35rem .9rem;border-radius:2rem;margin-top:1rem;font-size:.9rem;text-decoration:none}
+    .badge:hover{background:#e6f4fb}
+    main{max-width:760px;margin:2rem auto;padding:0 1rem}
+    .card{background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.08);padding:1.8rem;margin-bottom:1.5rem}
+    .card h2{color:#006699;margin-bottom:1rem;font-size:1.2rem}
+    code{background:#e8f4fb;padding:.15rem .5rem;border-radius:4px;font-size:.92em;word-break:break-all}
+    .feed-url{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.8rem 0}
+    .feed-url code{flex:1;min-width:0}
+    .copy-btn{background:#006699;color:#fff;border:none;padding:.45rem .9rem;border-radius:6px;cursor:pointer;font-size:.9rem;white-space:nowrap}
+    .copy-btn:hover{background:#005580}
+    .copy-btn.ok{background:#28a745}
+    ul.steps{padding-left:1.2rem}
+    ul.steps li{margin:.5rem 0}
+    .tag{display:inline-block;background:#e8f4fb;color:#006699;border-radius:4px;padding:.1rem .5rem;font-size:.82rem;margin:.15rem}
+    footer{text-align:center;padding:2rem;font-size:.85rem;color:#666}
+    footer a{color:#006699}
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>&#127754; Evenementen in en rond Blankenberge</h1>
+  <p>Gratis, dagelijks bijgewerkte RSS-feed voor uw toeristische website</p>
+  <a class="badge" href="feed.xml">&#128240; Abonneer op de RSS-feed</a>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>&#128279; Feed-URL</h2>
+    <p>Kopieer deze URL en voeg hem toe aan uw RSS-lezer of website:</p>
+    <div class="feed-url">
+      <code id="feed-url">https://kristofpoppe.github.io/aitests/blankenberge-rss/feed.xml</code>
+      <button class="copy-btn" onclick="copyUrl()">Kopieer</button>
+    </div>
+    <p style="font-size:.88rem;color:#555">De feed wordt elke dag automatisch bijgewerkt om 08:00 (Belgische tijd).</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128196; Wat bevat de feed?</h2>
+    <p>Actuele evenementen in en rond Blankenberge, waaronder:</p>
+    <div style="margin-top:.8rem">
+      <span class="tag">Strand &amp; Kust</span>
+      <span class="tag">Festivals</span>
+      <span class="tag">Cultuur</span>
+      <span class="tag">Kunst &amp; Markten</span>
+      <span class="tag">Vuurwerk</span>
+      <span class="tag">Familie</span>
+      <span class="tag">Rondleidingen</span>
+      <span class="tag">Natuur</span>
+    </div>
+    <p style="margin-top:1rem;font-size:.9rem">Elke <code>&lt;item&gt;</code> bevat: titel, datum, locatie, beschrijving en directe link naar meer info.</p>
+  </div>
+
+  <div class="card">
+    <h2>&#128187; Integratie op uw website</h2>
+    <p>Voeg dit HTML-fragment toe om de feed te tonen via JavaScript:</p>
+    <pre style="background:#f5f9fc;padding:1rem;border-radius:6px;overflow-x:auto;font-size:.85rem;margin-top:.8rem"><code>&lt;!-- Blankenberge Events RSS Widget --&gt;
+&lt;div id="blankenberge-events"&gt;Evenementen worden geladen…&lt;/div&gt;
+&lt;script&gt;
+fetch('https://api.rss2json.com/v1/api.json?rss_url='
+  + encodeURIComponent('https://kristofpoppe.github.io/aitests/blankenberge-rss/feed.xml'))
+  .then(r =&gt; r.json())
+  .then(data =&gt; {
+    const el = document.getElementById('blankenberge-events');
+    el.innerHTML = data.items.slice(0, 5).map(item =&gt; `
+      &lt;article style="margin-bottom:1.2rem"&gt;
+        &lt;h3&gt;&lt;a href="${item.link}"&gt;${item.title}&lt;/a&gt;&lt;/h3&gt;
+        &lt;p&gt;${item.description}&lt;/p&gt;
+      &lt;/article&gt;`).join('');
+  });
+&lt;/script&gt;</code></pre>
+  </div>
+
+  <div class="card">
+    <h2>&#128273; Automatische updates inschakelen (optioneel)</h2>
+    <p>Voor de beste datakwaliteit via de officiële <strong>Publiq / UiT Databank</strong>:</p>
+    <ul class="steps">
+      <li>Vraag een gratis API-sleutel aan via <a href="https://platform.uitdatabank.be" target="_blank" rel="noopener">platform.uitdatabank.be</a></li>
+      <li>Ga naar uw GitHub-repository &rarr; <em>Settings &rarr; Secrets and variables &rarr; Actions</em></li>
+      <li>Maak een nieuw secret aan met de naam <code>PUBLIQ_API_KEY</code> en plak uw sleutel</li>
+      <li>De feed wordt voortaan dagelijks automatisch gevuld met live evenementen</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>&#128204; Bron &amp; technische details</h2>
+    <ul class="steps">
+      <li>Datakwaliteit: <strong>Publiq UiT Databank</strong> (officiële Vlaamse eventendatabank)</li>
+      <li>Fallback: scraping van <a href="https://www.uitinvlaanderen.be" target="_blank">uitinvlaanderen.be</a></li>
+      <li>Hosting: <strong>GitHub Pages</strong> – 100% gratis</li>
+      <li>Update-frequentie: dagelijks via <strong>GitHub Actions</strong></li>
+      <li>Formaat: RSS 2.0 met Atom self-link</li>
+      <li>Broncode: <a href="https://github.com/kristofpoppe/aitests/blob/main/blankenberge-rss/scrape_events.py" target="_blank">scrape_events.py op GitHub</a></li>
+    </ul>
+  </div>
+
+</main>
+
+<footer>
+  <p>Gegevens afkomstig van <a href="https://www.uitdatabank.be" target="_blank">UiT Databank</a> &amp; <a href="https://www.visitblankenberge.be" target="_blank">Visit Blankenberge</a> &bull; Hosting via <a href="https://pages.github.com" target="_blank">GitHub Pages</a></p>
+</footer>
+
+<script>
+function copyUrl(){
+  const url = document.getElementById('feed-url').textContent;
+  navigator.clipboard.writeText(url).then(()=>{
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Gekopieerd!';
+    btn.classList.add('ok');
+    setTimeout(()=>{btn.textContent='Kopieer';btn.classList.remove('ok')},2000);
+  });
+}
+</script>
+
+</body>
+</html>

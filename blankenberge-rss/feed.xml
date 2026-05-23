@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Evenementen in en rond Blankenberge</title>
+    <link>https://www.visitblankenberge.be</link>
+    <description>Upcoming events in and around Blankenberge, Belgium – updated daily.</description>
+    <language>nl-BE</language>
+    <ttl>60</ttl>
+    <lastBuildDate>Fri, 23 May 2026 12:00:00 +0000</lastBuildDate>
+    <atom:link href="https://kristofpoppe.github.io/aitests/blankenberge-rss/feed.xml" rel="self" type="application/rss+xml"/>
+
+    <item>
+      <title>Zomerbars op het strand van Blankenberge</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-zomerbars-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; 1 juni – 31 augustus 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Strandzone, Blankenberge&lt;br/&gt;&lt;p&gt;Elk zomer openen de strandvakantie-bars langs de Boulevard. Geniet van cocktails, live muziek en een prachtig zeezicht.&lt;/p&gt;</description>
+      <pubDate>Mon, 01 Jun 2026 10:00:00 +0000</pubDate>
+      <category>Strand &amp; Kust</category>
+    </item>
+
+    <item>
+      <title>Zeewijding – Blessing of the Sea</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-zeewijding-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; 29 juni 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Haven Blankenberge&lt;br/&gt;&lt;p&gt;De traditionele zeewijding waarbij vissers en hun boten worden gezegend. Een eeuwenoude kusttraditie met processie en muziek.&lt;/p&gt;</description>
+      <pubDate>Mon, 29 Jun 2026 11:00:00 +0000</pubDate>
+      <category>Traditie</category>
+      <category>Cultuur</category>
+    </item>
+
+    <item>
+      <title>Kunstmarkt Blankenberge – Art Market</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-kunstmarkt-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; 5–6 juli 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Boulevard De Smet de Naeyer, Blankenberge&lt;br/&gt;&lt;p&gt;Meer dan 80 lokale en regionale kunstenaars stellen hun werk tentoon en te koop aan. Schilderijen, fotografie, beeldhouwwerken en ambachten.&lt;/p&gt;</description>
+      <pubDate>Sun, 05 Jul 2026 10:00:00 +0000</pubDate>
+      <category>Kunst</category>
+      <category>Markt</category>
+    </item>
+
+    <item>
+      <title>Blankenberge Beach Festival</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-beach-festival-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; 12 juli 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Strand Blankenberge&lt;br/&gt;&lt;p&gt;Het jaarlijkse strandfeest met live muziek, sport en animatie voor jong en oud. Vrije toegang.&lt;/p&gt;</description>
+      <pubDate>Sun, 12 Jul 2026 12:00:00 +0000</pubDate>
+      <category>Festival</category>
+      <category>Muziek</category>
+    </item>
+
+    <item>
+      <title>Sandcastle World Championship – Zandkastelen WK</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-sandcastle-wk-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; 19–20 juli 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Strand Blankenberge (sectie 4)&lt;br/&gt;&lt;p&gt;Internationale teams strijden om het mooiste en meest creatieve zandkasteel te bouwen. Gratis te bekijken voor het publiek.&lt;/p&gt;</description>
+      <pubDate>Sun, 19 Jul 2026 09:00:00 +0000</pubDate>
+      <category>Familie</category>
+      <category>Strand &amp; Kust</category>
+    </item>
+
+    <item>
+      <title>Vuurwerkfestival Blankenberge</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-vuurwerk-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; 15 augustus 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Zeedijk, Blankenberge&lt;br/&gt;&lt;p&gt;Een spectaculaire vuurwerkshow boven de Noordzee ter gelegenheid van de nationale feestdag. Gratis voor iedereen.&lt;/p&gt;</description>
+      <pubDate>Sat, 15 Aug 2026 22:00:00 +0000</pubDate>
+      <category>Vuurwerk</category>
+      <category>Familie</category>
+    </item>
+
+    <item>
+      <title>Sea Life Blankenberge – Zomerexpositie</title>
+      <link>https://www.sealife.be/nl/blankenberge</link>
+      <guid isPermaLink="false">blankenberge-sealife-expo-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; Dagelijks open (hele zomer)&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Koning Albert I-laan 116, Blankenberge&lt;br/&gt;&lt;p&gt;Het bekende aquarium met speciale zomertentoonstellingen en interactieve activiteiten voor kinderen.&lt;/p&gt;</description>
+      <pubDate>Fri, 01 May 2026 09:00:00 +0000</pubDate>
+      <category>Familie</category>
+      <category>Natuur</category>
+    </item>
+
+    <item>
+      <title>Rondleiding Historisch Blankenberge</title>
+      <link>https://www.visitblankenberge.be/ontdek/activiteiten</link>
+      <guid isPermaLink="false">blankenberge-rondleiding-2026</guid>
+      <description>&lt;b&gt;Datum:&lt;/b&gt; Elke zaterdag juni–augustus 2026&lt;br/&gt;&lt;b&gt;Locatie:&lt;/b&gt; Vertrek Gemeenteplein, Blankenberge&lt;br/&gt;&lt;p&gt;Ontdek de rijke geschiedenis van Blankenberge tijdens een begeleide wandeling langs de markante plaatsen van de stad.&lt;/p&gt;</description>
+      <pubDate>Sat, 06 Jun 2026 10:00:00 +0000</pubDate>
+      <category>Cultuur</category>
+      <category>Rondleiding</category>
+    </item>
+
+  </channel>
+</rss>

@@ -1,0 +1,40 @@
+name: Update Blankenberge Events RSS Feed
+
+on:
+  schedule:
+    # Run every day at 06:00 UTC (08:00 Belgian time)
+    - cron: "0 6 * * *"
+  workflow_dispatch: # allow manual trigger from GitHub Actions UI
+
+permissions:
+  contents: write
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch events and rebuild RSS feed
+        env:
+          PUBLIQ_API_KEY: ${{ secrets.PUBLIQ_API_KEY }}
+        run: python3 blankenberge-rss/scrape_events.py
+
+      - name: Commit updated feed (if changed)
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add blankenberge-rss/feed.xml
+          if git diff --cached --quiet; then
+            echo "No changes to feed – nothing to commit."
+          else
+            git commit -m "chore: update Blankenberge events RSS feed [$(date -u +%Y-%m-%d)]"
+            git push
+          fi
