@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monkey Banana Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0d0d1a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Courier New', monospace;
+  color: #fff;
+  gap: 0;
+}
+#scoreboard {
+  padding: 10px 30px;
+  font-size: 20px;
+  letter-spacing: 2px;
+  background: #0a0a18;
+  width: 900px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 2px solid #333;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+.p1name { color: #ff6b6b; font-weight: bold; }
+.p2name { color: #48dbfb; font-weight: bold; }
+#round-label { color: #aaa; font-size: 14px; }
+canvas {
+  display: block;
+  border-left: 2px solid #333;
+  border-right: 2px solid #333;
+}
+#controls {
+  background: #0a0a18;
+  padding: 14px 20px;
+  width: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid #333;
+  border-top: 1px solid #222;
+  border-radius: 0 0 8px 8px;
+}
+.player-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.3s;
+}
+.player-panel.inactive { opacity: 0.35; pointer-events: none; }
+.player-panel label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #ccc;
+}
+.player-panel input[type=number] {
+  width: 68px;
+  padding: 5px 8px;
+  background: #1a1a35;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+.player-panel.p1 input:focus { border-color: #ff6b6b; outline: none; }
+.player-panel.p2 input:focus { border-color: #48dbfb; outline: none; }
+input[type=range] {
+  width: 100px;
+  accent-color: #e94560;
+}
+#center-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#wind-display {
+  font-size: 13px;
+  color: #aaa;
+  min-width: 130px;
+  text-align: center;
+}
+#status-msg {
+  font-size: 14px;
+  color: #ffd700;
+  text-align: center;
+  min-height: 20px;
+}
+#fire-btn {
+  padding: 10px 36px;
+  background: #e94560;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background 0.2s, transform 0.1s;
+}
+#fire-btn:hover:not(:disabled) { background: #ff6b81; transform: scale(1.04); }
+#fire-btn:active:not(:disabled) { transform: scale(0.97); }
+#fire-btn:disabled { background: #444; cursor: not-allowed; color: #888; }
+#new-game-btn {
+  padding: 6px 14px;
+  background: transparent;
+  color: #888;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  transition: color 0.2s, border-color 0.2s;
+}
+#new-game-btn:hover { color: #ccc; border-color: #888; }
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #ccc;
+}
+.angle-display, .speed-display {
+  display: inline-block;
+  width: 34px;
+  text-align: right;
+  color: #ffd700;
+  font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div id="scoreboard">
+  <div class="p1name">🐒 MONKEY 1 &nbsp;<span id="score1" style="color:#fff">0</span></div>
+  <div id="round-label">Round <span id="round-num">1</span></div>
+  <div class="p2name"><span id="score2" style="color:#fff">0</span>&nbsp; MONKEY 2 🐒</div>
+</div>
+<canvas id="gameCanvas" width="900" height="460"></canvas>
+<div id="controls">
+  <!-- Player 1 -->
+  <div class="player-panel p1" id="panel1">
+    <div style="color:#ff6b6b;font-weight:bold;font-size:14px;margin-bottom:2px;">MONKEY 1</div>
+    <div class="slider-row">
+      Angle:
+      <input type="range" id="p1angle" min="0" max="90" value="45" step="1">
+      <span class="angle-display" id="p1angle-val">45</span>°
+    </div>
+    <div class="slider-row">
+      Speed:
+      <input type="range" id="p1speed" min="10" max="150" value="65" step="1">
+      <span class="speed-display" id="p1speed-val">65</span>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div id="center-panel">
+    <div id="wind-display">Wind: —</div>
+    <div id="status-msg">Monkey 1's turn</div>
+    <button id="fire-btn">THROW!</button>
+    <button id="new-game-btn">New Game</button>
+  </div>
+
+  <!-- Player 2 -->
+  <div class="player-panel p2" id="panel2">
+    <div style="color:#48dbfb;font-weight:bold;font-size:14px;margin-bottom:2px;text-align:right;">MONKEY 2</div>
+    <div class="slider-row">
+      Angle:
+      <input type="range" id="p2angle" min="90" max="180" value="135" step="1">
+      <span class="angle-display" id="p2angle-val">135</span>°
+    </div>
+    <div class="slider-row">
+      Speed:
+      <input type="range" id="p2speed" min="10" max="150" value="65" step="1">
+      <span class="speed-display" id="p2speed-val">65</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const GROUND_Y = H - 18;
+const GRAVITY = 220;       // px/s²
+const SPEED_SCALE = 4.8;   // input * scale = px/s
+const WIND_FORCE = 25;     // px/s² per wind unit
+const EXPLOSION_R = 38;
+const HIT_RADIUS = 22;
+
+let buildings = [];
+let craters = [];
+let monkeys = [{x:0,y:0}, {x:0,y:0}];
+let currentPlayer = 0;
+let scores = [0, 0];
+let round = 1;
+let wind = 0;
+let gameState = 'input'; // input | flying | exploding
+let banana = null;
+let explosion = null;
+let hitPlayer = -1;
+
+// ─── Stars (fixed positions) ─────────────────────────────────────────────────
+const stars = Array.from({length: 90}, (_, i) => ({
+  x: (i * 137 + 53) % W,
+  y: (i * 89 + 17) % (H * 0.55),
+  r: i % 5 === 0 ? 1.5 : 0.8,
+  twinkle: Math.random()
+}));
+
+// ─── Building generation ──────────────────────────────────────────────────────
+function generateBuildings() {
+  buildings = [];
+  craters = [];
+  const n = 10;
+  const bw = W / n;
+  for (let i = 0; i < n; i++) {
+    const h = 70 + Math.random() * 260;
+    buildings.push({
+      x: i * bw + 2,
+      w: bw - 4,
+      h,
+      y: GROUND_Y - h,
+      hue: Math.floor(Math.random() * 360),
+      winSeed: Math.random() * 1000
+    });
+  }
+}
+
+function placeMonkeys() {
+  const b1 = buildings[1];
+  const b2 = buildings[buildings.length - 2];
+  monkeys[0] = { x: b1.x + b1.w / 2, y: b1.y };
+  monkeys[1] = { x: b2.x + b2.w / 2, y: b2.y };
+}
+
+function generateWind() {
+  wind = parseFloat((Math.random() * 8 - 4).toFixed(2));
+  const dir = wind > 0.05 ? '→' : wind < -0.05 ? '←' : '—';
+  const strength = Math.abs(wind).toFixed(1);
+  document.getElementById('wind-display').textContent = `Wind: ${dir} ${strength}`;
+}
+
+// ─── Draw helpers ─────────────────────────────────────────────────────────────
+function drawSky() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, '#060618');
+  grad.addColorStop(0.65, '#0e0e28');
+  grad.addColorStop(1, '#1a1230');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Moon
+  ctx.save();
+  ctx.fillStyle = '#fffde0';
+  ctx.shadowColor = '#fffde0';
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.arc(W - 90, 55, 28, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#0a0a22';
+  ctx.beginPath();
+  ctx.arc(W - 76, 48, 24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Stars
+  const t = Date.now() / 1000;
+  for (const s of stars) {
+    const alpha = 0.4 + 0.35 * Math.sin(t * 1.2 + s.twinkle * 6);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawGround() {
+  ctx.fillStyle = '#1e3a12';
+  ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+  ctx.fillStyle = '#2d5a1a';
+  ctx.fillRect(0, GROUND_Y, W, 3);
+}
+
+function drawBuildings() {
+  for (const b of buildings) {
+    // Main body
+    const grad = ctx.createLinearGradient(b.x, 0, b.x + b.w, 0);
+    grad.addColorStop(0, `hsl(${b.hue},22%,20%)`);
+    grad.addColorStop(0.45, `hsl(${b.hue},22%,30%)`);
+    grad.addColorStop(1, `hsl(${b.hue},22%,16%)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+
+    // Roof ledge
+    ctx.fillStyle = `hsl(${b.hue},22%,36%)`;
+    ctx.fillRect(b.x - 2, b.y, b.w + 4, 4);
+
+    // Windows
+    const cols = Math.max(1, Math.floor(b.w / 15));
+    const rows = Math.max(1, Math.floor(b.h / 18));
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const wx = b.x + 5 + c * 15;
+        const wy = b.y + 10 + r * 18;
+        if (wx + 9 > b.x + b.w) continue;
+        const lit = Math.sin(b.winSeed + r * 5.1 + c * 3.7) > 0.1;
+        ctx.fillStyle = lit ? 'rgba(255,240,140,0.75)' : 'rgba(30,30,55,0.7)';
+        ctx.fillRect(wx, wy, 9, 11);
+        if (lit) {
+          ctx.fillStyle = 'rgba(255,255,180,0.25)';
+          ctx.fillRect(wx - 1, wy - 1, 11, 13);
+        }
+      }
+    }
+  }
+
+  // Craters overdraw
+  for (const c of craters) {
+    const grad = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
+    grad.addColorStop(0, 'rgba(8,8,22,1)');
+    grad.addColorStop(0.55, 'rgba(12,12,28,0.95)');
+    grad.addColorStop(1, 'rgba(8,8,22,0)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawMonkey(mx, my, flip, p) {
+  ctx.save();
+  if (flip) { ctx.translate(mx * 2, 0); ctx.scale(-1, 1); }
+  const color = '#8B5513';
+  const faceColor = '#C47A30';
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(mx, my + 20, 13, 5, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Body
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(mx, my + 8, 11, 13, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.beginPath();
+  ctx.arc(mx, my - 8, 11, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ears
+  ctx.beginPath();
+  ctx.arc(mx - 11, my - 8, 4.5, 0, Math.PI * 2);
+  ctx.arc(mx + 11, my - 8, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Face
+  ctx.fillStyle = faceColor;
+  ctx.beginPath();
+  ctx.ellipse(mx, my - 5, 7, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(mx - 3.5, my - 10, 2.5, 0, Math.PI * 2);
+  ctx.arc(mx + 3.5, my - 10, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#111';
+  ctx.beginPath();
+  ctx.arc(mx - 3.5, my - 10, 1.2, 0, Math.PI * 2);
+  ctx.arc(mx + 3.5, my - 10, 1.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Smile
+  ctx.strokeStyle = '#7a3a10';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(mx, my - 3, 4, 0.2, Math.PI - 0.2);
+  ctx.stroke();
+
+  // Arms up (throwing pose)
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(mx - 9, my + 2);
+  ctx.lineTo(mx - 18, my - 6);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(mx + 9, my + 2);
+  ctx.lineTo(mx + 19, my - 12);
+  ctx.stroke();
+
+  // Player color indicator dot
+  ctx.fillStyle = p === 0 ? '#ff6b6b' : '#48dbfb';
+  ctx.beginPath();
+  ctx.arc(mx, my - 26, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawBanana(x, y, rot) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.strokeStyle = '#FFD700';
+  ctx.lineWidth = 4.5;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = '#FFD700';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.arc(0, 0, 9, 0.25, Math.PI - 0.25);
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawExplosion() {
+  if (!explosion) return;
+  const { x, y, r, maxR } = explosion;
+  const prog = r / maxR;
+
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0,   `rgba(255,255,180,${1 - prog * 0.5})`);
+  g.addColorStop(0.35, `rgba(255,160,0,${0.9 - prog * 0.4})`);
+  g.addColorStop(0.7,  `rgba(220,40,0,${0.6 - prog * 0.4})`);
+  g.addColorStop(1,    'rgba(80,0,0,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Sparks
+  const t = Date.now() / 1000;
+  for (let i = 0; i < 10; i++) {
+    const ang = (i / 10) * Math.PI * 2 + t * 4;
+    const sr = r * (0.7 + 0.4 * Math.abs(Math.sin(i * 2.3)));
+    ctx.fillStyle = `rgba(255,220,0,${0.85 - prog * 0.8})`;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(ang) * sr, y + Math.sin(ang) * sr, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawTrajectory() {
+  if (gameState !== 'input') return;
+  const { vx, vy } = getThrowVelocity(currentPlayer);
+  const { x: sx, y: sy } = getBananaStart(currentPlayer);
+
+  ctx.save();
+  ctx.setLineDash([3, 10]);
+  ctx.strokeStyle = currentPlayer === 0 ? 'rgba(255,107,107,0.25)' : 'rgba(72,219,251,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+
+  let bx = sx, by = sy, bvx = vx, bvy = vy;
+  const dt = 0.04;
+  let first = true;
+  for (let t = 0; t < 4; t += dt) {
+    if (first) { ctx.moveTo(bx, by); first = false; }
+    else ctx.lineTo(bx, by);
+    bvx += wind * WIND_FORCE * dt;
+    bvy += GRAVITY * dt;
+    bx += bvx * dt;
+    by += bvy * dt;
+    if (by > GROUND_Y + 10 || bx < -10 || bx > W + 10) break;
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ─── Physics helpers ──────────────────────────────────────────────────────────
+function getThrowVelocity(player) {
+  const angleEl = document.getElementById(`p${player+1}angle`);
+  const speedEl = document.getElementById(`p${player+1}speed`);
+  const angleDeg = parseFloat(angleEl.value);
+  const speed = parseFloat(speedEl.value) * SPEED_SCALE;
+  const rad = angleDeg * Math.PI / 180;
+  // angle for p1: 0°=right, 90°=straight up
+  // angle for p2: mirrored (180°=left, 90°=straight up via slider 90-180)
+  const vx = speed * Math.cos(rad);
+  const vy = -speed * Math.sin(rad); // negative = upward (screen coords)
+  return { vx, vy };
+}
+
+function getBananaStart(player) {
+  const m = monkeys[player];
+  return { x: m.x + (player === 0 ? 18 : -18), y: m.y - 12 };
+}
+
+function isInBuilding(x, y) {
+  for (const b of buildings) {
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
+      for (const c of craters) {
+        const dx = x - c.x, dy = y - c.y;
+        if (dx*dx + dy*dy < c.r * c.r) return false;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+function distToMonkey(x, y, idx) {
+  const dx = x - monkeys[idx].x, dy = y - monkeys[idx].y;
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+// ─── Game flow ────────────────────────────────────────────────────────────────
+function fireBanana() {
+  if (gameState !== 'input') return;
+  const start = getBananaStart(currentPlayer);
+  const { vx, vy } = getThrowVelocity(currentPlayer);
+  banana = { x: start.x, y: start.y, vx, vy, rot: 0 };
+  gameState = 'flying';
+  document.getElementById('fire-btn').disabled = true;
+  document.getElementById('status-msg').textContent =
+    currentPlayer === 0 ? "Monkey 1 throws!" : "Monkey 2 throws!";
+}
+
+function triggerExplosion(x, y, hp) {
+  gameState = 'exploding';
+  explosion = { x, y, r: 4, maxR: EXPLOSION_R };
+  craters.push({ x, y, r: EXPLOSION_R });
+  hitPlayer = hp;
+}
+
+function onExplosionDone() {
+  explosion = null;
+  if (hitPlayer >= 0) {
+    scores[currentPlayer]++;
+    document.getElementById(`score${currentPlayer+1}`).textContent = scores[currentPlayer];
+    document.getElementById('status-msg').textContent =
+      `Monkey ${currentPlayer+1} scores! 🎉 New round in 2s…`;
+    setTimeout(startNewRound, 2000);
+  } else {
+    switchTurn();
+  }
+}
+
+function switchTurn() {
+  currentPlayer = 1 - currentPlayer;
+  gameState = 'input';
+  document.getElementById('fire-btn').disabled = false;
+  updatePanels();
+}
+
+function startNewRound() {
+  round++;
+  document.getElementById('round-num').textContent = round;
+  generateBuildings();
+  placeMonkeys();
+  generateWind();
+  craters = [];
+  currentPlayer = 0;
+  banana = null;
+  explosion = null;
+  gameState = 'input';
+  document.getElementById('fire-btn').disabled = false;
+  updatePanels();
+}
+
+function newGame() {
+  scores = [0, 0];
+  round = 1;
+  document.getElementById('score1').textContent = '0';
+  document.getElementById('score2').textContent = '0';
+  document.getElementById('round-num').textContent = '1';
+  startNewRound();
+}
+
+function updatePanels() {
+  document.getElementById('panel1').classList.toggle('inactive', currentPlayer !== 0);
+  document.getElementById('panel2').classList.toggle('inactive', currentPlayer !== 1);
+  document.getElementById('status-msg').textContent =
+    `Monkey ${currentPlayer+1}'s turn`;
+}
+
+// ─── Main loop ────────────────────────────────────────────────────────────────
+let lastTs = null;
+
+function update(ts) {
+  if (!lastTs) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.05);
+  lastTs = ts;
+
+  if (gameState === 'flying' && banana) {
+    banana.vx += wind * WIND_FORCE * dt;
+    banana.vy += GRAVITY * dt;
+    banana.x  += banana.vx * dt;
+    banana.y  += banana.vy * dt;
+    banana.rot += 8 * dt;
+
+    const target = 1 - currentPlayer;
+
+    if (distToMonkey(banana.x, banana.y, target) < HIT_RADIUS) {
+      triggerExplosion(banana.x, banana.y, target);
+      banana = null;
+      return;
+    }
+
+    if (isInBuilding(banana.x, banana.y) || banana.y >= GROUND_Y) {
+      triggerExplosion(banana.x, banana.y, -1);
+      banana = null;
+      return;
+    }
+
+    if (banana.x < -30 || banana.x > W + 30 || banana.y < -200) {
+      banana = null;
+      switchTurn();
+      return;
+    }
+  }
+
+  if (gameState === 'exploding' && explosion) {
+    explosion.r += 100 * dt;
+    if (explosion.r >= explosion.maxR) {
+      explosion.r = explosion.maxR;
+      onExplosionDone();
+    }
+  }
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  drawSky();
+  drawBuildings();
+  drawGround();
+
+  for (let i = 0; i < 2; i++) {
+    drawMonkey(monkeys[i].x, monkeys[i].y, i === 1, i);
+  }
+
+  drawTrajectory();
+
+  if (banana) drawBanana(banana.x, banana.y, banana.rot);
+  drawExplosion();
+}
+
+function loop(ts) {
+  update(ts);
+  render();
+  requestAnimationFrame(loop);
+}
+
+// ─── Slider sync ─────────────────────────────────────────────────────────────
+function bindSlider(id, displayId) {
+  const el = document.getElementById(id);
+  const disp = document.getElementById(displayId);
+  el.addEventListener('input', () => { disp.textContent = el.value; });
+}
+bindSlider('p1angle', 'p1angle-val');
+bindSlider('p1speed', 'p1speed-val');
+bindSlider('p2angle', 'p2angle-val');
+bindSlider('p2speed', 'p2speed-val');
+
+// p2 angle slider: 90°(left) to 180°(hard left down) — mirror of p1
+// We present it as "90 = straight up, 180 = downward left" but label shows actual angle
+// Simpler: let p2 slider also be 0-90 but we'll negate vx on their side
+// Actually the current setup: p1 angle 0-90, p2 angle 90-180 (both sliders point toward center)
+// getThrowVelocity uses Math.cos/sin of the raw angle so:
+// p1: 45° → vx=+, vy=up   (throws right)
+// p2: 135° → vx=-, vy=up  (throws left)  ✓
+
+document.getElementById('fire-btn').addEventListener('click', fireBanana);
+document.getElementById('new-game-btn').addEventListener('click', newGame);
+
+// ─── Keyboard shortcuts ───────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space' || e.code === 'Enter') {
+    e.preventDefault();
+    fireBanana();
+  }
+});
+
+// ─── Start ────────────────────────────────────────────────────────────────────
+generateBuildings();
+placeMonkeys();
+generateWind();
+updatePanels();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
