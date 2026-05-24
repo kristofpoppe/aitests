@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Join Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+:root {
+  --team-color: #ff6b6b;
+  --team-dim: rgba(255,107,107,0.15);
+  --team-border: rgba(255,107,107,0.4);
+}
+html, body {
+  height: 100%;
+  background: #0d0d1a;
+  font-family: 'Courier New', monospace;
+  color: #fff;
+  overflow: hidden;
+}
+
+/* ── Layout ── */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px 20px;
+  gap: 0;
+}
+
+/* ── Header ── */
+#header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 0 14px;
+  border-bottom: 1px solid var(--team-border);
+}
+#team-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: bold;
+  color: var(--team-color);
+  letter-spacing: 2px;
+}
+#team-badge span { font-size: 28px; }
+#conn-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #555;
+  box-shadow: 0 0 6px #555;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+#conn-dot.online { background: #2ecc71; box-shadow: 0 0 8px #2ecc71; }
+#conn-dot.offline { background: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
+
+/* ── Values display ── */
+#values-row {
+  display: flex;
+  justify-content: space-around;
+  padding: 16px 0 10px;
+}
+.val-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.val-label { font-size: 11px; color: #888; letter-spacing: 1px; text-transform: uppercase; }
+.val-num {
+  font-size: 42px;
+  font-weight: bold;
+  color: var(--team-color);
+  line-height: 1;
+  min-width: 80px;
+  text-align: center;
+}
+.val-unit { font-size: 13px; color: #666; }
+
+/* ── Arc canvas ── */
+#arc-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+#arc-canvas { display: block; }
+
+/* ── Sliders ── */
+#sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 0;
+}
+.slider-group { display: flex; flex-direction: column; gap: 8px; }
+.slider-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #888;
+  letter-spacing: 1px;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #1e1e3a;
+  outline: none;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--team-color);
+  cursor: pointer;
+  box-shadow: 0 0 8px var(--team-color);
+  border: 2px solid #0d0d1a;
+}
+input[type=range]::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--team-color);
+  cursor: pointer;
+  border: 2px solid #0d0d1a;
+}
+.slider-track-wrap { position: relative; }
+.slider-fill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--team-color);
+  pointer-events: none;
+  opacity: 0.5;
+  margin-top: 0; /* aligned by JS */
+}
+
+/* ── Status ── */
+#status-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 80px;
+}
+#status-text {
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+  letter-spacing: 1px;
+}
+#status-text.active { color: var(--team-color); font-size: 16px; }
+#status-text.fired { color: #ffd700; font-size: 18px; }
+
+/* ── Countdown ring ── */
+#countdown-wrap {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+#countdown-wrap.visible { display: flex; }
+#countdown-svg { transform: rotate(-90deg); }
+#countdown-ring {
+  stroke: var(--team-color);
+  stroke-dasharray: 220;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.9s linear, stroke 0.3s;
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+#countdown-ring.waiting { stroke: #444; }
+#countdown-num {
+  font-size: 38px;
+  font-weight: bold;
+  color: var(--team-color);
+  line-height: 1;
+  margin-top: -4px;
+}
+#countdown-label { font-size: 11px; color: #666; letter-spacing: 2px; }
+
+/* ── Fired overlay ── */
+#fired-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 100;
+}
+#fired-overlay.visible { display: flex; }
+#fired-emoji { font-size: 72px; animation: flyIn 0.4s ease-out; }
+#fired-text { font-size: 22px; color: #ffd700; letter-spacing: 2px; }
+#fired-params { font-size: 14px; color: #aaa; }
+@keyframes flyIn {
+  from { transform: translateY(-40px) scale(0.5); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ── Disconnected banner ── */
+#disconnected-banner {
+  display: none;
+  background: #3a1010;
+  color: #ff8888;
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+#disconnected-banner.visible { display: block; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <div id="team-badge">
+      <span id="team-emoji">🐒</span>
+      <span id="team-label">TEAM 1</span>
+    </div>
+    <div id="conn-dot"></div>
+  </div>
+
+  <div id="disconnected-banner">Reconnecting…</div>
+
+  <div id="values-row">
+    <div class="val-box">
+      <div class="val-label">Angle</div>
+      <div class="val-num" id="disp-angle">45</div>
+      <div class="val-unit">degrees</div>
+    </div>
+    <div id="arc-wrap">
+      <canvas id="arc-canvas" width="110" height="90"></canvas>
+    </div>
+    <div class="val-box">
+      <div class="val-label">Speed</div>
+      <div class="val-num" id="disp-speed">65</div>
+      <div class="val-unit">power</div>
+    </div>
+  </div>
+
+  <div id="sliders">
+    <div class="slider-group">
+      <div class="slider-header">
+        <span>ANGLE</span><span>0° — 90°</span>
+      </div>
+      <input type="range" id="sl-angle" min="0" max="90" value="45" step="1">
+    </div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <span>SPEED / POWER</span><span>10 — 150</span>
+      </div>
+      <input type="range" id="sl-speed" min="10" max="150" value="65" step="1">
+    </div>
+  </div>
+
+  <div id="status-area">
+    <div id="status-text">Connecting…</div>
+    <div id="countdown-wrap">
+      <svg id="countdown-svg" width="80" height="80" viewBox="0 0 80 80">
+        <circle cx="40" cy="40" r="35" stroke="#1a1a35" stroke-width="6" fill="none"/>
+        <circle id="countdown-ring" cx="40" cy="40" r="35"/>
+      </svg>
+      <div id="countdown-num">10</div>
+      <div id="countdown-label">SECONDS</div>
+    </div>
+  </div>
+</div>
+
+<!-- Fired overlay -->
+<div id="fired-overlay">
+  <div id="fired-emoji">🍌</div>
+  <div id="fired-text">BANANA AWAY!</div>
+  <div id="fired-params" id="fired-params-text"></div>
+</div>
+
+<script>
+// ── Team setup ────────────────────────────────────────────────────────────────
+const qs = new URLSearchParams(location.search);
+const myTeam = parseInt(qs.get('team')) === 2 ? 2 : 1;
+
+if (myTeam === 2) {
+  document.documentElement.style.setProperty('--team-color', '#48dbfb');
+  document.documentElement.style.setProperty('--team-dim', 'rgba(72,219,251,0.15)');
+  document.documentElement.style.setProperty('--team-border', 'rgba(72,219,251,0.4)');
+}
+document.getElementById('team-label').textContent = `TEAM ${myTeam}`;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let myAngle = 45;
+let mySpeed = 65;
+let ws = null;
+let connected = false;
+
+// ── Arc canvas ────────────────────────────────────────────────────────────────
+const arcCanvas = document.getElementById('arc-canvas');
+const arcCtx = arcCanvas.getContext('2d');
+const teamColor = myTeam === 1 ? '#ff6b6b' : '#48dbfb';
+
+function drawArc(angleDeg) {
+  const W = arcCanvas.width, H = arcCanvas.height;
+  arcCtx.clearRect(0, 0, W, H);
+
+  const ox = myTeam === 1 ? 10 : W - 10;
+  const oy = H - 10;
+  const len = 55;
+  const rad = angleDeg * Math.PI / 180;
+  const dir = myTeam === 1 ? 1 : -1;
+
+  // Ground line
+  arcCtx.strokeStyle = '#333';
+  arcCtx.lineWidth = 1.5;
+  arcCtx.setLineDash([4, 4]);
+  arcCtx.beginPath();
+  arcCtx.moveTo(myTeam === 1 ? 5 : W - 5, oy);
+  arcCtx.lineTo(myTeam === 1 ? W - 5 : 5, oy);
+  arcCtx.stroke();
+  arcCtx.setLineDash([]);
+
+  // Angle arc
+  arcCtx.strokeStyle = teamColor + '44';
+  arcCtx.lineWidth = 1;
+  arcCtx.beginPath();
+  if (myTeam === 1) {
+    arcCtx.arc(ox, oy, 30, -rad, 0);
+  } else {
+    arcCtx.arc(ox, oy, 30, Math.PI, Math.PI + rad);
+  }
+  arcCtx.stroke();
+
+  // Throw line
+  arcCtx.strokeStyle = teamColor;
+  arcCtx.lineWidth = 3;
+  arcCtx.lineCap = 'round';
+  arcCtx.shadowColor = teamColor;
+  arcCtx.shadowBlur = 6;
+  arcCtx.beginPath();
+  arcCtx.moveTo(ox, oy);
+  arcCtx.lineTo(ox + dir * Math.cos(rad) * len, oy - Math.sin(rad) * len);
+  arcCtx.stroke();
+  arcCtx.shadowBlur = 0;
+
+  // Banana at tip
+  const tx = ox + dir * Math.cos(rad) * len;
+  const ty = oy - Math.sin(rad) * len;
+  arcCtx.strokeStyle = '#FFD700';
+  arcCtx.lineWidth = 3;
+  arcCtx.save();
+  arcCtx.translate(tx, ty);
+  arcCtx.rotate(dir * rad + (myTeam === 2 ? Math.PI : 0));
+  arcCtx.beginPath();
+  arcCtx.arc(0, 0, 6, 0.3, Math.PI - 0.3);
+  arcCtx.stroke();
+  arcCtx.restore();
+}
+
+// ── Slider bindings ───────────────────────────────────────────────────────────
+const slAngle = document.getElementById('sl-angle');
+const slSpeed = document.getElementById('sl-speed');
+
+function onAngleChange() {
+  myAngle = parseInt(slAngle.value);
+  document.getElementById('disp-angle').textContent = myAngle;
+  drawArc(myAngle);
+  sendParams();
+}
+function onSpeedChange() {
+  mySpeed = parseInt(slSpeed.value);
+  document.getElementById('disp-speed').textContent = mySpeed;
+  sendParams();
+}
+
+slAngle.addEventListener('input', onAngleChange);
+slSpeed.addEventListener('input', onSpeedChange);
+drawArc(myAngle);
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/?type=player&team=${myTeam}`);
+
+  ws.onopen = () => {
+    connected = true;
+    setConnDot('online');
+    document.getElementById('disconnected-banner').classList.remove('visible');
+    setStatus('waiting');
+    sendParams();
+  };
+
+  ws.onmessage = e => {
+    try { handleMsg(JSON.parse(e.data)); } catch {}
+  };
+
+  ws.onclose = () => {
+    connected = false;
+    setConnDot('offline');
+    document.getElementById('disconnected-banner').classList.add('visible');
+    setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+function sendParams() {
+  if (ws?.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'params', angle: myAngle, speed: mySpeed }));
+  }
+}
+
+// ── Message handling ──────────────────────────────────────────────────────────
+let currentSec = 0;
+const RING_CIRCUM = 220; // 2π×35
+
+function handleMsg(msg) {
+  switch (msg.type) {
+    case 'joined':
+      // Already set up above
+      if (msg.state === 'countdown') {
+        // Joined mid-countdown
+        showCountdown(msg.activeTeam === myTeam);
+      } else {
+        setStatus('waiting');
+      }
+      break;
+
+    case 'status':
+      if (msg.state === 'lobby') setStatus('waiting');
+      break;
+
+    case 'countdown': {
+      const active = msg.activeTeam === myTeam;
+      currentSec = msg.sec;
+      showCountdown(active);
+      updateRing(msg.sec, active);
+      document.getElementById('countdown-num').textContent = msg.sec;
+      break;
+    }
+
+    case 'fire': {
+      const isMyTeam = msg.team === myTeam;
+      hideCountdown();
+      showFired(isMyTeam, msg.params, isMyTeam);
+      setTimeout(hideFired, 3500);
+      break;
+    }
+  }
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function setConnDot(state) {
+  const el = document.getElementById('conn-dot');
+  el.className = '';
+  el.classList.add(state);
+}
+
+function setStatus(kind, extra) {
+  const el = document.getElementById('status-text');
+  el.className = '';
+  if (kind === 'waiting') {
+    el.textContent = 'Waiting for your turn…';
+    hideCountdown();
+  } else if (kind === 'your-turn') {
+    el.textContent = `YOUR TURN — adjust and hold tight!`;
+    el.classList.add('active');
+  } else if (kind === 'other-turn') {
+    el.textContent = 'Other team is throwing…';
+  }
+}
+
+function showCountdown(isMyTurn) {
+  document.getElementById('countdown-wrap').classList.add('visible');
+  const ring = document.getElementById('countdown-ring');
+  if (isMyTurn) {
+    ring.classList.remove('waiting');
+    setStatus('your-turn');
+    slAngle.disabled = false;
+    slSpeed.disabled = false;
+  } else {
+    ring.classList.add('waiting');
+    setStatus('other-turn');
+    slAngle.disabled = false;
+    slSpeed.disabled = false;
+  }
+}
+
+function hideCountdown() {
+  document.getElementById('countdown-wrap').classList.remove('visible');
+}
+
+function updateRing(sec, active) {
+  const ring = document.getElementById('countdown-ring');
+  const progress = sec / 10;
+  ring.style.strokeDashoffset = RING_CIRCUM * (1 - progress);
+  ring.style.stroke = active ? teamColor : '#444';
+}
+
+function showFired(isMyTeam, params, myFire) {
+  const el = document.getElementById('fired-overlay');
+  document.getElementById('fired-emoji').textContent = myFire ? '🍌' : '👀';
+  document.getElementById('fired-text').textContent = myFire ? 'BANANA AWAY!' : 'They threw!';
+  document.getElementById('fired-params').textContent =
+    myFire ? `Angle: ${params.angle}° · Speed: ${params.speed}` : '';
+  el.classList.add('visible');
+}
+
+function hideFired() {
+  document.getElementById('fired-overlay').classList.remove('visible');
+  setStatus('waiting');
+}
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+connect();
+</script>
+</body>
+</html>

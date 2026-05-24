@@ -18,7 +18,7 @@ body {
   gap: 0;
 }
 #scoreboard {
-  padding: 10px 30px;
+  padding: 10px 20px;
   font-size: 20px;
   letter-spacing: 2px;
   background: #0a0a18;
@@ -32,12 +32,14 @@ body {
 }
 .p1name { color: #ff6b6b; font-weight: bold; }
 .p2name { color: #48dbfb; font-weight: bold; }
-#round-label { color: #aaa; font-size: 14px; }
+#round-label { color: #aaa; font-size: 13px; }
 canvas {
   display: block;
   border-left: 2px solid #333;
   border-right: 2px solid #333;
 }
+
+/* ── Local controls ── */
 #controls {
   background: #0a0a18;
   padding: 14px 20px;
@@ -56,37 +58,14 @@ canvas {
   transition: opacity 0.3s;
 }
 .player-panel.inactive { opacity: 0.35; pointer-events: none; }
-.player-panel label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #ccc;
-}
-.player-panel input[type=number] {
-  width: 68px;
-  padding: 5px 8px;
-  background: #1a1a35;
-  color: #fff;
-  border: 1px solid #444;
-  border-radius: 4px;
-  text-align: center;
-  font-size: 14px;
-  font-family: 'Courier New', monospace;
-}
-.player-panel.p1 input:focus { border-color: #ff6b6b; outline: none; }
-.player-panel.p2 input:focus { border-color: #48dbfb; outline: none; }
-input[type=range] {
-  width: 100px;
-  accent-color: #e94560;
-}
+input[type=range] { width: 100px; accent-color: #e94560; }
 #center-panel {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
-#wind-display {
+#wind-display, #mp-wind-display {
   font-size: 13px;
   color: #aaa;
   min-width: 130px;
@@ -114,7 +93,7 @@ input[type=range] {
 #fire-btn:hover:not(:disabled) { background: #ff6b81; transform: scale(1.04); }
 #fire-btn:active:not(:disabled) { transform: scale(0.97); }
 #fire-btn:disabled { background: #444; cursor: not-allowed; color: #888; }
-#new-game-btn {
+.small-btn {
   padding: 6px 14px;
   background: transparent;
   color: #888;
@@ -125,7 +104,7 @@ input[type=range] {
   font-family: 'Courier New', monospace;
   transition: color 0.2s, border-color 0.2s;
 }
-#new-game-btn:hover { color: #ccc; border-color: #888; }
+.small-btn:hover { color: #ccc; border-color: #888; }
 .slider-row {
   display: flex;
   align-items: center;
@@ -140,18 +119,166 @@ input[type=range] {
   color: #ffd700;
   font-size: 13px;
 }
+
+/* ── Mode toggle button in scoreboard ── */
+#mp-toggle {
+  padding: 5px 12px;
+  background: transparent;
+  color: #666;
+  border: 1px solid #444;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+#mp-toggle:hover { color: #aaa; border-color: #666; }
+#mp-toggle.active { color: #ffd700; border-color: #ffd700; background: rgba(255,215,0,0.07); }
+
+/* ── Multiplayer panel ── */
+#mp-panel {
+  display: none;
+  background: #0a0a18;
+  padding: 12px 16px;
+  width: 900px;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 10px;
+  border: 2px solid #333;
+  border-top: 1px solid #222;
+  border-radius: 0 0 8px 8px;
+}
+#mp-panel.visible { display: flex; }
+
+.mp-team {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+.mp-team.right { flex-direction: row-reverse; }
+
+.qr-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.qr-img {
+  width: 90px;
+  height: 90px;
+  border-radius: 6px;
+  display: block;
+  background: #1a1a35;
+}
+.qr-label {
+  position: absolute;
+  bottom: -16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: #555;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+}
+
+.mp-team-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.mp-team-name {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 2px;
+}
+.mp-team-name.t1 { color: #ff6b6b; }
+.mp-team-name.t2 { color: #48dbfb; }
+.mp-count { font-size: 12px; color: #888; }
+.mp-count span { color: #fff; }
+.mp-avg-display { font-size: 11px; color: #555; line-height: 1.6; }
+.mp-avg-display.has-data { color: #aaa; }
+
+.mp-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 200px;
+  flex-shrink: 0;
+}
+
+#mp-countdown {
+  font-size: 52px;
+  font-weight: bold;
+  color: #ffd700;
+  line-height: 1;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.3s;
+  letter-spacing: -2px;
+}
+#mp-countdown.urgent { color: #ff6b6b; animation: pulse 0.5s ease-in-out infinite alternate; }
+@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+
+#mp-status { font-size: 12px; color: #888; text-align: center; min-height: 16px; }
+
+#mp-start-btn {
+  padding: 9px 24px;
+  background: #e94560;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  letter-spacing: 1px;
+  transition: background 0.2s, transform 0.1s;
+}
+#mp-start-btn:hover:not(:disabled) { background: #ff6b81; transform: scale(1.03); }
+#mp-start-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+#mp-conn-status {
+  font-size: 10px;
+  color: #444;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+#mp-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #444;
+  transition: background 0.3s;
+}
+#mp-dot.online { background: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+#mp-dot.offline { background: #e74c3c; }
+
+/* ── Dots per player ── */
+.player-dots { display: flex; flex-wrap: wrap; gap: 3px; max-width: 80px; }
+.player-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.player-dot.t1 { background: #ff6b6b; }
+.player-dot.t2 { background: #48dbfb; }
 </style>
 </head>
 <body>
 
 <div id="scoreboard">
   <div class="p1name">🐒 MONKEY 1 &nbsp;<span id="score1" style="color:#fff">0</span></div>
-  <div id="round-label">Round <span id="round-num">1</span></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+    <div id="round-label">Round <span id="round-num">1</span></div>
+    <button id="mp-toggle" onclick="toggleMP()">🌐 MULTIPLAYER</button>
+  </div>
   <div class="p2name"><span id="score2" style="color:#fff">0</span>&nbsp; MONKEY 2 🐒</div>
 </div>
+
 <canvas id="gameCanvas" width="900" height="460"></canvas>
+
+<!-- ── Local mode controls ── -->
 <div id="controls">
-  <!-- Player 1 -->
   <div class="player-panel p1" id="panel1">
     <div style="color:#ff6b6b;font-weight:bold;font-size:14px;margin-bottom:2px;">MONKEY 1</div>
     <div class="slider-row">
@@ -166,15 +293,13 @@ input[type=range] {
     </div>
   </div>
 
-  <!-- Center -->
   <div id="center-panel">
     <div id="wind-display">Wind: —</div>
     <div id="status-msg">Monkey 1's turn</div>
     <button id="fire-btn">THROW!</button>
-    <button id="new-game-btn">New Game</button>
+    <button class="small-btn" onclick="newGame()">New Game</button>
   </div>
 
-  <!-- Player 2 -->
   <div class="player-panel p2" id="panel2">
     <div style="color:#48dbfb;font-weight:bold;font-size:14px;margin-bottom:2px;text-align:right;">MONKEY 2</div>
     <div class="slider-row">
@@ -190,17 +315,62 @@ input[type=range] {
   </div>
 </div>
 
+<!-- ── Multiplayer mode controls ── -->
+<div id="mp-panel">
+  <!-- Team 1 -->
+  <div class="mp-team">
+    <div class="qr-wrap">
+      <img class="qr-img" id="qr1" src="/qr/1" alt="Team 1">
+      <div class="qr-label">SCAN TO JOIN</div>
+    </div>
+    <div class="mp-team-info">
+      <div class="mp-team-name t1">TEAM 1</div>
+      <div class="mp-count">Players: <span id="t1-count">0</span></div>
+      <div class="player-dots" id="t1-dots"></div>
+      <div class="mp-avg-display" id="t1-avg">—</div>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div class="mp-center">
+    <div id="mp-wind-display">Wind: —</div>
+    <div id="mp-countdown">—</div>
+    <div id="mp-status">Waiting for players…</div>
+    <button id="mp-start-btn" onclick="mpStartThrow()">▶ START THROW</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="small-btn" onclick="newGame()">New Game</button>
+      <div id="mp-conn-status"><div id="mp-dot"></div><span id="mp-conn-label">offline</span></div>
+    </div>
+  </div>
+
+  <!-- Team 2 -->
+  <div class="mp-team right">
+    <div class="qr-wrap">
+      <img class="qr-img" id="qr2" src="/qr/2" alt="Team 2">
+      <div class="qr-label">SCAN TO JOIN</div>
+    </div>
+    <div class="mp-team-info" style="text-align:right;">
+      <div class="mp-team-name t2">TEAM 2</div>
+      <div class="mp-count">Players: <span id="t2-count">0</span></div>
+      <div class="player-dots" id="t2-dots" style="justify-content:flex-end;"></div>
+      <div class="mp-avg-display" id="t2-avg">—</div>
+    </div>
+  </div>
+</div>
+
 <script>
+// ─── Canvas & constants ───────────────────────────────────────────────────────
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const W = canvas.width, H = canvas.height;
 const GROUND_Y = H - 18;
-const GRAVITY = 220;       // px/s²
-const SPEED_SCALE = 4.8;   // input * scale = px/s
-const WIND_FORCE = 25;     // px/s² per wind unit
+const GRAVITY = 220;
+const SPEED_SCALE = 4.8;
+const WIND_FORCE = 25;
 const EXPLOSION_R = 38;
 const HIT_RADIUS = 22;
 
+// ─── Game state ───────────────────────────────────────────────────────────────
 let buildings = [];
 let craters = [];
 let monkeys = [{x:0,y:0}, {x:0,y:0}];
@@ -208,12 +378,19 @@ let currentPlayer = 0;
 let scores = [0, 0];
 let round = 1;
 let wind = 0;
-let gameState = 'input'; // input | flying | exploding
+let gameState = 'input';
 let banana = null;
 let explosion = null;
 let hitPlayer = -1;
 
-// ─── Stars (fixed positions) ─────────────────────────────────────────────────
+// ─── Multiplayer state ────────────────────────────────────────────────────────
+let mpMode = false;
+let ws = null;
+let mpConnected = false;
+let mpServerState = 'lobby';
+let mpCountdownActive = false;
+
+// ─── Stars ────────────────────────────────────────────────────────────────────
 const stars = Array.from({length: 90}, (_, i) => ({
   x: (i * 137 + 53) % W,
   y: (i * 89 + 17) % (H * 0.55),
@@ -230,9 +407,7 @@ function generateBuildings() {
   for (let i = 0; i < n; i++) {
     const h = 70 + Math.random() * 260;
     buildings.push({
-      x: i * bw + 2,
-      w: bw - 4,
-      h,
+      x: i * bw + 2, w: bw - 4, h,
       y: GROUND_Y - h,
       hue: Math.floor(Math.random() * 360),
       winSeed: Math.random() * 1000
@@ -251,10 +426,12 @@ function generateWind() {
   wind = parseFloat((Math.random() * 8 - 4).toFixed(2));
   const dir = wind > 0.05 ? '→' : wind < -0.05 ? '←' : '—';
   const strength = Math.abs(wind).toFixed(1);
-  document.getElementById('wind-display').textContent = `Wind: ${dir} ${strength}`;
+  const text = `Wind: ${dir} ${strength}`;
+  document.getElementById('wind-display').textContent = text;
+  document.getElementById('mp-wind-display').textContent = text;
 }
 
-// ─── Draw helpers ─────────────────────────────────────────────────────────────
+// ─── Drawing ──────────────────────────────────────────────────────────────────
 function drawSky() {
   const grad = ctx.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, '#060618');
@@ -263,7 +440,6 @@ function drawSky() {
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, W, H);
 
-  // Moon
   ctx.save();
   ctx.fillStyle = '#fffde0';
   ctx.shadowColor = '#fffde0';
@@ -278,7 +454,6 @@ function drawSky() {
   ctx.fill();
   ctx.restore();
 
-  // Stars
   const t = Date.now() / 1000;
   for (const s of stars) {
     const alpha = 0.4 + 0.35 * Math.sin(t * 1.2 + s.twinkle * 6);
@@ -298,19 +473,15 @@ function drawGround() {
 
 function drawBuildings() {
   for (const b of buildings) {
-    // Main body
     const grad = ctx.createLinearGradient(b.x, 0, b.x + b.w, 0);
     grad.addColorStop(0, `hsl(${b.hue},22%,20%)`);
     grad.addColorStop(0.45, `hsl(${b.hue},22%,30%)`);
     grad.addColorStop(1, `hsl(${b.hue},22%,16%)`);
     ctx.fillStyle = grad;
     ctx.fillRect(b.x, b.y, b.w, b.h);
-
-    // Roof ledge
     ctx.fillStyle = `hsl(${b.hue},22%,36%)`;
     ctx.fillRect(b.x - 2, b.y, b.w + 4, 4);
 
-    // Windows
     const cols = Math.max(1, Math.floor(b.w / 15));
     const rows = Math.max(1, Math.floor(b.h / 18));
     for (let r = 0; r < rows; r++) {
@@ -329,7 +500,6 @@ function drawBuildings() {
     }
   }
 
-  // Craters overdraw
   for (const c of craters) {
     const grad = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.r);
     grad.addColorStop(0, 'rgba(8,8,22,1)');
@@ -345,39 +515,30 @@ function drawBuildings() {
 function drawMonkey(mx, my, flip, p) {
   ctx.save();
   if (flip) { ctx.translate(mx * 2, 0); ctx.scale(-1, 1); }
-  const color = '#8B5513';
-  const faceColor = '#C47A30';
+  const color = '#8B5513', faceColor = '#C47A30';
 
-  // Shadow
   ctx.fillStyle = 'rgba(0,0,0,0.25)';
   ctx.beginPath();
   ctx.ellipse(mx, my + 20, 13, 5, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Body
   ctx.fillStyle = color;
   ctx.beginPath();
   ctx.ellipse(mx, my + 8, 11, 13, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  // Head
   ctx.beginPath();
   ctx.arc(mx, my - 8, 11, 0, Math.PI * 2);
   ctx.fill();
-
-  // Ears
   ctx.beginPath();
   ctx.arc(mx - 11, my - 8, 4.5, 0, Math.PI * 2);
   ctx.arc(mx + 11, my - 8, 4.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // Face
   ctx.fillStyle = faceColor;
   ctx.beginPath();
   ctx.ellipse(mx, my - 5, 7, 8, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Eyes
   ctx.fillStyle = '#fff';
   ctx.beginPath();
   ctx.arc(mx - 3.5, my - 10, 2.5, 0, Math.PI * 2);
@@ -389,27 +550,20 @@ function drawMonkey(mx, my, flip, p) {
   ctx.arc(mx + 3.5, my - 10, 1.2, 0, Math.PI * 2);
   ctx.fill();
 
-  // Smile
   ctx.strokeStyle = '#7a3a10';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
   ctx.arc(mx, my - 3, 4, 0.2, Math.PI - 0.2);
   ctx.stroke();
 
-  // Arms up (throwing pose)
   ctx.strokeStyle = color;
   ctx.lineWidth = 6;
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(mx - 9, my + 2);
-  ctx.lineTo(mx - 18, my - 6);
-  ctx.stroke();
+  ctx.moveTo(mx - 9, my + 2); ctx.lineTo(mx - 18, my - 6); ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(mx + 9, my + 2);
-  ctx.lineTo(mx + 19, my - 12);
-  ctx.stroke();
+  ctx.moveTo(mx + 9, my + 2); ctx.lineTo(mx + 19, my - 12); ctx.stroke();
 
-  // Player color indicator dot
   ctx.fillStyle = p === 0 ? '#ff6b6b' : '#48dbfb';
   ctx.beginPath();
   ctx.arc(mx, my - 26, 4, 0, Math.PI * 2);
@@ -438,9 +592,8 @@ function drawExplosion() {
   if (!explosion) return;
   const { x, y, r, maxR } = explosion;
   const prog = r / maxR;
-
   const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-  g.addColorStop(0,   `rgba(255,255,180,${1 - prog * 0.5})`);
+  g.addColorStop(0,    `rgba(255,255,180,${1 - prog * 0.5})`);
   g.addColorStop(0.35, `rgba(255,160,0,${0.9 - prog * 0.4})`);
   g.addColorStop(0.7,  `rgba(220,40,0,${0.6 - prog * 0.4})`);
   g.addColorStop(1,    'rgba(80,0,0,0)');
@@ -449,7 +602,6 @@ function drawExplosion() {
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
 
-  // Sparks
   const t = Date.now() / 1000;
   for (let i = 0; i < 10; i++) {
     const ang = (i / 10) * Math.PI * 2 + t * 4;
@@ -463,7 +615,13 @@ function drawExplosion() {
 
 function drawTrajectory() {
   if (gameState !== 'input') return;
-  const { vx, vy } = getThrowVelocity(currentPlayer);
+  if (mpMode) return; // voting is on mobile in multiplayer
+
+  const angleDeg = parseFloat(document.getElementById(`p${currentPlayer+1}angle`).value);
+  const speed = parseFloat(document.getElementById(`p${currentPlayer+1}speed`).value) * SPEED_SCALE;
+  const rad = angleDeg * Math.PI / 180;
+  let bvx = speed * Math.cos(rad);
+  let bvy = -speed * Math.sin(rad);
   const { x: sx, y: sy } = getBananaStart(currentPlayer);
 
   ctx.save();
@@ -472,9 +630,8 @@ function drawTrajectory() {
   ctx.lineWidth = 1.5;
   ctx.beginPath();
 
-  let bx = sx, by = sy, bvx = vx, bvy = vy;
+  let bx = sx, by = sy, first = true;
   const dt = 0.04;
-  let first = true;
   for (let t = 0; t < 4; t += dt) {
     if (first) { ctx.moveTo(bx, by); first = false; }
     else ctx.lineTo(bx, by);
@@ -490,19 +647,6 @@ function drawTrajectory() {
 }
 
 // ─── Physics helpers ──────────────────────────────────────────────────────────
-function getThrowVelocity(player) {
-  const angleEl = document.getElementById(`p${player+1}angle`);
-  const speedEl = document.getElementById(`p${player+1}speed`);
-  const angleDeg = parseFloat(angleEl.value);
-  const speed = parseFloat(speedEl.value) * SPEED_SCALE;
-  const rad = angleDeg * Math.PI / 180;
-  // angle for p1: 0°=right, 90°=straight up
-  // angle for p2: mirrored (180°=left, 90°=straight up via slider 90-180)
-  const vx = speed * Math.cos(rad);
-  const vy = -speed * Math.sin(rad); // negative = upward (screen coords)
-  return { vx, vy };
-}
-
 function getBananaStart(player) {
   const m = monkeys[player];
   return { x: m.x + (player === 0 ? 18 : -18), y: m.y - 12 };
@@ -527,15 +671,28 @@ function distToMonkey(x, y, idx) {
 }
 
 // ─── Game flow ────────────────────────────────────────────────────────────────
-function fireBanana() {
+// angleDeg and speedVal can be undefined (reads sliders) or explicit (MP mode).
+// For MP: mobile players use 0-90°; P2 needs 180-angle to throw left.
+function fireBanana(angleDeg, speedVal) {
   if (gameState !== 'input') return;
-  const start = getBananaStart(currentPlayer);
-  const { vx, vy } = getThrowVelocity(currentPlayer);
-  banana = { x: start.x, y: start.y, vx, vy, rot: 0 };
+  const p = currentPlayer;
+
+  let finalAngle, finalSpeed;
+  if (angleDeg !== undefined) {
+    finalAngle = p === 1 ? (180 - angleDeg) : angleDeg;
+    finalSpeed = speedVal;
+  } else {
+    finalAngle = parseFloat(document.getElementById(`p${p+1}angle`).value);
+    finalSpeed = parseFloat(document.getElementById(`p${p+1}speed`).value);
+  }
+
+  const rad = finalAngle * Math.PI / 180;
+  const spd = finalSpeed * SPEED_SCALE;
+  const start = getBananaStart(p);
+  banana = { x: start.x, y: start.y, vx: spd * Math.cos(rad), vy: -spd * Math.sin(rad), rot: 0 };
   gameState = 'flying';
   document.getElementById('fire-btn').disabled = true;
-  document.getElementById('status-msg').textContent =
-    currentPlayer === 0 ? "Monkey 1 throws!" : "Monkey 2 throws!";
+  document.getElementById('status-msg').textContent = `Monkey ${p+1} throws! 🍌`;
 }
 
 function triggerExplosion(x, y, hp) {
@@ -550,8 +707,8 @@ function onExplosionDone() {
   if (hitPlayer >= 0) {
     scores[currentPlayer]++;
     document.getElementById(`score${currentPlayer+1}`).textContent = scores[currentPlayer];
-    document.getElementById('status-msg').textContent =
-      `Monkey ${currentPlayer+1} scores! 🎉 New round in 2s…`;
+    document.getElementById('status-msg').textContent = `Monkey ${currentPlayer+1} scores! 🎉 New round in 2s…`;
+    if (mpMode) setMpStatus(`Monkey ${currentPlayer+1} scores! 🎉`);
     setTimeout(startNewRound, 2000);
   } else {
     switchTurn();
@@ -561,8 +718,15 @@ function onExplosionDone() {
 function switchTurn() {
   currentPlayer = 1 - currentPlayer;
   gameState = 'input';
+  mpCountdownActive = false;
   document.getElementById('fire-btn').disabled = false;
+  document.getElementById('mp-start-btn').disabled = false;
   updatePanels();
+  if (mpMode) {
+    mpCountdownDisplay('—');
+    setMpStatus(`Team ${currentPlayer+1}'s turn — press Start Throw`);
+  }
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'reset' }));
 }
 
 function startNewRound() {
@@ -576,8 +740,15 @@ function startNewRound() {
   banana = null;
   explosion = null;
   gameState = 'input';
+  mpCountdownActive = false;
   document.getElementById('fire-btn').disabled = false;
+  document.getElementById('mp-start-btn').disabled = false;
   updatePanels();
+  if (mpMode) {
+    mpCountdownDisplay('—');
+    setMpStatus("Team 1's turn — press Start Throw");
+  }
+  if (ws?.readyState === 1) ws.send(JSON.stringify({ type: 'reset' }));
 }
 
 function newGame() {
@@ -592,8 +763,7 @@ function newGame() {
 function updatePanels() {
   document.getElementById('panel1').classList.toggle('inactive', currentPlayer !== 0);
   document.getElementById('panel2').classList.toggle('inactive', currentPlayer !== 1);
-  document.getElementById('status-msg').textContent =
-    `Monkey ${currentPlayer+1}'s turn`;
+  document.getElementById('status-msg').textContent = `Monkey ${currentPlayer+1}'s turn`;
 }
 
 // ─── Main loop ────────────────────────────────────────────────────────────────
@@ -612,23 +782,16 @@ function update(ts) {
     banana.rot += 8 * dt;
 
     const target = 1 - currentPlayer;
-
     if (distToMonkey(banana.x, banana.y, target) < HIT_RADIUS) {
       triggerExplosion(banana.x, banana.y, target);
-      banana = null;
-      return;
+      banana = null; return;
     }
-
     if (isInBuilding(banana.x, banana.y) || banana.y >= GROUND_Y) {
       triggerExplosion(banana.x, banana.y, -1);
-      banana = null;
-      return;
+      banana = null; return;
     }
-
     if (banana.x < -30 || banana.x > W + 30 || banana.y < -200) {
-      banana = null;
-      switchTurn();
-      return;
+      banana = null; switchTurn(); return;
     }
   }
 
@@ -643,57 +806,171 @@ function update(ts) {
 
 function render() {
   ctx.clearRect(0, 0, W, H);
-  drawSky();
-  drawBuildings();
-  drawGround();
-
-  for (let i = 0; i < 2; i++) {
-    drawMonkey(monkeys[i].x, monkeys[i].y, i === 1, i);
-  }
-
+  drawSky(); drawBuildings(); drawGround();
+  for (let i = 0; i < 2; i++) drawMonkey(monkeys[i].x, monkeys[i].y, i === 1, i);
   drawTrajectory();
-
   if (banana) drawBanana(banana.x, banana.y, banana.rot);
   drawExplosion();
 }
 
-function loop(ts) {
-  update(ts);
-  render();
-  requestAnimationFrame(loop);
-}
+function loop(ts) { update(ts); render(); requestAnimationFrame(loop); }
 
-// ─── Slider sync ─────────────────────────────────────────────────────────────
-function bindSlider(id, displayId) {
+// ─── Slider sync ──────────────────────────────────────────────────────────────
+['p1angle','p1speed','p2angle','p2speed'].forEach(id => {
   const el = document.getElementById(id);
-  const disp = document.getElementById(displayId);
+  const disp = document.getElementById(id + '-val');
   el.addEventListener('input', () => { disp.textContent = el.value; });
-}
-bindSlider('p1angle', 'p1angle-val');
-bindSlider('p1speed', 'p1speed-val');
-bindSlider('p2angle', 'p2angle-val');
-bindSlider('p2speed', 'p2speed-val');
+});
 
-// p2 angle slider: 90°(left) to 180°(hard left down) — mirror of p1
-// We present it as "90 = straight up, 180 = downward left" but label shows actual angle
-// Simpler: let p2 slider also be 0-90 but we'll negate vx on their side
-// Actually the current setup: p1 angle 0-90, p2 angle 90-180 (both sliders point toward center)
-// getThrowVelocity uses Math.cos/sin of the raw angle so:
-// p1: 45° → vx=+, vy=up   (throws right)
-// p2: 135° → vx=-, vy=up  (throws left)  ✓
-
-document.getElementById('fire-btn').addEventListener('click', fireBanana);
-document.getElementById('new-game-btn').addEventListener('click', newGame);
-
-// ─── Keyboard shortcuts ───────────────────────────────────────────────────────
+document.getElementById('fire-btn').addEventListener('click', () => fireBanana());
 document.addEventListener('keydown', e => {
-  if (e.code === 'Space' || e.code === 'Enter') {
-    e.preventDefault();
-    fireBanana();
+  if ((e.code === 'Space' || e.code === 'Enter') && !mpMode) {
+    e.preventDefault(); fireBanana();
   }
 });
 
-// ─── Start ────────────────────────────────────────────────────────────────────
+// ─── Multiplayer mode ─────────────────────────────────────────────────────────
+function toggleMP() {
+  mpMode = !mpMode;
+  const btn = document.getElementById('mp-toggle');
+  btn.classList.toggle('active', mpMode);
+  btn.textContent = mpMode ? '🎮 LOCAL MODE' : '🌐 MULTIPLAYER';
+  document.getElementById('controls').style.display = mpMode ? 'none' : 'flex';
+  document.getElementById('mp-panel').classList.toggle('visible', mpMode);
+
+  if (mpMode) {
+    connectWS();
+    setMpStatus(`Team ${currentPlayer+1}'s turn — press Start Throw`);
+    mpCountdownDisplay('—');
+  } else {
+    disconnectWS();
+  }
+}
+
+function connectWS() {
+  if (ws) return;
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/?type=game`);
+
+  ws.onopen = () => {
+    mpConnected = true;
+    setConnDot('online');
+  };
+
+  ws.onmessage = e => {
+    try { handleServerMsg(JSON.parse(e.data)); } catch {}
+  };
+
+  ws.onclose = () => {
+    mpConnected = false;
+    ws = null;
+    setConnDot('offline');
+    if (mpMode) setTimeout(connectWS, 3000);
+  };
+
+  ws.onerror = () => ws?.close();
+}
+
+function disconnectWS() {
+  ws?.close();
+  ws = null;
+  mpConnected = false;
+  setConnDot('offline');
+}
+
+function handleServerMsg(msg) {
+  switch (msg.type) {
+    case 'init':
+      setConnDot('online');
+      break;
+
+    case 'status':
+      updateTeamCounts(msg.t1, msg.t2);
+      mpServerState = msg.state;
+      if (msg.state === 'lobby' && !mpCountdownActive) {
+        document.getElementById('mp-start-btn').disabled = false;
+      }
+      break;
+
+    case 'countdown': {
+      mpCountdownActive = true;
+      document.getElementById('mp-start-btn').disabled = true;
+      const teamName = msg.activeTeam === 1 ? 'Team 1' : 'Team 2';
+      const sec = msg.sec;
+      mpCountdownDisplay(sec);
+      const el = document.getElementById('mp-countdown');
+      el.classList.toggle('urgent', sec <= 3);
+      setMpStatus(sec > 0 ? `${teamName} is voting…` : 'Throwing!');
+      break;
+    }
+
+    case 'fire': {
+      mpCountdownActive = false;
+      const { team, params } = msg;
+      const label = `Angle ${params.angle}° · Speed ${params.speed}`;
+      document.getElementById(team === 1 ? 't1-avg' : 't2-avg').textContent = label;
+      document.getElementById(team === 1 ? 't1-avg' : 't2-avg').classList.add('has-data');
+      setMpStatus(`Team ${team} average: ${label}`);
+      mpCountdownDisplay('🍌');
+      // Fire the banana with the averaged params
+      fireBanana(params.angle, params.speed);
+      break;
+    }
+  }
+}
+
+function mpStartThrow() {
+  if (!ws || ws.readyState !== 1) {
+    setMpStatus('Not connected to server — run: node server.js');
+    return;
+  }
+  if (gameState !== 'input') return;
+  if (mpServerState === 'countdown') return;
+  ws.send(JSON.stringify({ type: 'start', team: currentPlayer + 1 }));
+  document.getElementById('mp-start-btn').disabled = true;
+  setMpStatus('Countdown started!');
+}
+
+function updateTeamCounts(t1, t2) {
+  document.getElementById('t1-count').textContent = t1;
+  document.getElementById('t2-count').textContent = t2;
+  renderDots('t1-dots', t1, 't1');
+  renderDots('t2-dots', t2, 't2');
+}
+
+function renderDots(containerId, count, cls) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  for (let i = 0; i < Math.min(count, 12); i++) {
+    const d = document.createElement('div');
+    d.className = `player-dot ${cls}`;
+    el.appendChild(d);
+  }
+  if (count > 12) {
+    const more = document.createElement('span');
+    more.style.cssText = 'font-size:9px;color:#666;align-self:center;';
+    more.textContent = `+${count - 12}`;
+    el.appendChild(more);
+  }
+}
+
+function setMpStatus(text) {
+  document.getElementById('mp-status').textContent = text;
+}
+
+function mpCountdownDisplay(val) {
+  document.getElementById('mp-countdown').textContent = val;
+  document.getElementById('mp-countdown').classList.remove('urgent');
+}
+
+function setConnDot(state) {
+  const dot = document.getElementById('mp-dot');
+  const label = document.getElementById('mp-conn-label');
+  dot.className = state;
+  label.textContent = state === 'online' ? 'connected' : 'offline';
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
 generateBuildings();
 placeMonkeys();
 generateWind();
